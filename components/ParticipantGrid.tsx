@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Participant, ParticipantRole } from '../types';
+import { Participant, ParticipantRole, ConnectionQuality } from '../types';
 
 interface ParticipantGridProps {
   participants: Participant[];
@@ -67,6 +67,29 @@ const ParticipantGrid: React.FC<ParticipantGridProps> = ({ participants }) => {
   );
 };
 
+const ConnectionIndicator: React.FC<{ quality?: ConnectionQuality }> = ({ quality = 'good' }) => {
+  const getStyles = () => {
+    switch (quality) {
+      case 'poor':
+        return { color: 'bg-red-500', bars: 1, pulse: 'animate-pulse' };
+      case 'fair':
+        return { color: 'bg-yellow-500', bars: 2, pulse: '' };
+      default:
+        return { color: 'bg-green-500', bars: 3, pulse: '' };
+    }
+  };
+
+  const { color, bars, pulse } = getStyles();
+
+  return (
+    <div className={`flex items-end gap-[1.5px] h-3 px-1.5 py-1 bg-black/40 backdrop-blur-sm rounded-sm border border-white/5 transition-all duration-300 ${pulse}`} title={`Connection: ${quality}`}>
+      <div className={`w-[2px] h-[30%] rounded-full transition-colors duration-500 ${bars >= 1 ? color : 'bg-white/10'}`} />
+      <div className={`w-[2px] h-[60%] rounded-full transition-colors duration-500 ${bars >= 2 ? color : 'bg-white/10'}`} />
+      <div className={`w-[2px] h-[100%] rounded-full transition-colors duration-500 ${bars >= 3 ? color : 'bg-white/10'}`} />
+    </div>
+  );
+};
+
 const ParticipantTile: React.FC<{ 
   participant: Participant; 
   isLocal?: boolean;
@@ -79,16 +102,8 @@ const ParticipantTile: React.FC<{
 
   // Orbit Premium Style: High contrast, Electric Blue accents, layered depth
   const borderStyle = isCurrentlySpeaking 
-    ? 'border-2 border-blue-500 z-10' 
+    ? 'border-2 border-blue-500 z-10 shadow-[0_0_20px_rgba(59,130,246,0.15)]' 
     : 'border border-white/10 z-0';
-
-  const getConnectionColor = () => {
-    switch(participant.connection) {
-      case 'poor': return 'bg-red-500';
-      case 'fair': return 'bg-yellow-500';
-      default: return 'bg-green-500';
-    }
-  };
 
   return (
     <div className={`relative bg-[#0d0d0d] rounded-sm overflow-hidden flex items-center justify-center transition-all duration-300 ${borderStyle} ${isSolo ? 'w-full h-full' : ''}`}>
@@ -150,9 +165,9 @@ const ParticipantTile: React.FC<{
         )}
       </div>
       
-      {/* Jitsi-style Connection Dot */}
-      <div className="absolute bottom-3 right-3 flex items-center gap-1 z-20">
-        <div className={`w-2 h-2 rounded-full border border-black/40 ${getConnectionColor()}`} />
+      {/* Enhanced Connection Indicator (Bottom Right) */}
+      <div className="absolute bottom-3 right-3 z-20">
+        <ConnectionIndicator quality={participant.connection} />
       </div>
 
       <style>{`

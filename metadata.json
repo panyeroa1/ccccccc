@@ -1,0 +1,8 @@
+{
+  "name": "Orbit RTC",
+  "description": "A professional-grade real-time communications platform with SFU-based conferencing, screen sharing, integrated Gemini AI assistant, and live transcription.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

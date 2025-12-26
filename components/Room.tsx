@@ -1,0 +1,220 @@
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { Participant, ParticipantRole, ChatMessage, DeviceSettings, ToastMessage, ConnectionQuality } from '../types';
+import ParticipantGrid from './ParticipantGrid';
+import ControlDock from './ControlDock';
+import Sidebar from './Sidebar';
+import { useGeminiLive } from '../hooks/useGeminiLive';
+import { transcribeAudio } from '../services/geminiService';
+
+interface RoomProps {
+  userName: string;
+  roomName: string;
+  onLeave: () => void;
+  devices: DeviceSettings;
+}
+
+const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices }) => {
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<'chat' | 'participants'>('chat');
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(false);
+  const [isSharingScreen, setIsSharingScreen] = useState(false);
+  const [isHandRaised, setIsHandRaised] = useState(false);
+
+  const { isActive: aiActive, isConnecting: aiConnecting, startSession: startAi, stopSession: stopAi } = useGeminiLive();
+
+  const addToast = useCallback((text: string, type: 'info' | 'error' | 'success' = 'info') => {
+    const id = Date.now().toString();
+    setToasts(prev => [...prev, { id, text, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 3000);
+  }, []);
+
+  // Initial Setup: Single User Entry
+  useEffect(() => {
+    const self: Participant = {
+      id: 'local-user',
+      name: userName,
+      role: ParticipantRole.HOST,
+      isMuted,
+      isVideoOff,
+      isSharingScreen: false,
+      isSpeaking: false,
+      isHandRaised: false,
+      connection: 'good'
+    };
+    
+    // We start with only the user. AI is toggled manually via the dock.
+    setParticipants([self]);
+    addToast(`You joined ${roomName}`, 'info');
+  }, [userName, roomName, addToast]);
+
+  // Sync state
+  useEffect(() => {
+    setParticipants(prev => prev.map(p => 
+      p.id === 'local-user' ? { ...p, isMuted, isVideoOff, isSharingScreen, isHandRaised } : p
+    ));
+  }, [isMuted, isVideoOff, isSharingScreen, isHandRaised]);
+
+  // Handle AI participant visibility
+  useEffect(() => {
+    if (aiActive) {
+      setParticipants(prev => {
+        if (prev.some(p => p.role === ParticipantRole.AI)) return prev;
+        const ai: Participant = { 
+          id: 'gemini-ai', 
+          name: 'Orbit Assistant', 
+          role: ParticipantRole.AI, 
+          isMuted: false, 
+          isVideoOff: false, 
+          isSharingScreen: false, 
+          isSpeaking: false, 
+          isHandRaised: false,
+          connection: 'good' 
+        };
+        return [...prev, ai];
+      });
+    } else {
+      setParticipants(prev => prev.filter(p => p.role !== ParticipantRole.AI));
+    }
+  }, [aiActive]);
+
+  // Toned down simulation
+  useEffect(() => {
+    const guestNames = ["Marcus Thorne", "Ada Lovelace", "Linus Torvalds"];
+    const simulationInterval = setInterval(() => {
+      setParticipants(prev => {
+        const remoteParticipants = prev.filter(p => p.id !== 'local-user' && p.role !== ParticipantRole.AI);
+        
+        // Lower probability of someone joining
+        if (remoteParticipants.length < 3 && Math.random() > 0.95) {
+          const newName = guestNames[Math.floor(Math.random() * guestNames.length)];
+          const newGuest: Participant = {
+            id: `sim-${Date.now()}`,
+            name: newName,
+            role: ParticipantRole.PARTICIPANT,
+            isMuted: Math.random() > 0.3,
+            isVideoOff: Math.random() > 0.7,
+            isSharingScreen: false,
+            isSpeaking: false,
+            isHandRaised: false,
+            connection: 'good'
+          };
+          addToast(`${newName} joined the meeting`, 'info');
+          return [...prev, newGuest];
+        }
+
+        return prev.map(p => {
+          if (p.id === 'local-user' || p.role === ParticipantRole.AI) return p;
+          return { 
+            ...p, 
+            isHandRaised: Math.random() > 0.98 ? !p.isHandRaised : p.isHandRaised,
+            isMuted: Math.random() > 0.98 ? !p.isMuted : p.isMuted
+          };
+        });
+      });
+    }, 8000);
+    return () => clearInterval(simulationInterval);
+  }, [addToast]);
+
+  const handleKickParticipant = (id: string) => {
+    setParticipants(prev => prev.filter(p => p.id !== id));
+    addToast("Participant removed.", "error");
+  };
+
+  const handleSendMessage = (text: string) => {
+    const msg: ChatMessage = {
+      id: Date.now().toString(),
+      senderId: 'local-user',
+      senderName: userName,
+      text,
+      timestamp: Date.now()
+    };
+    setMessages(prev => [...prev, msg]);
+  };
+
+  const handleTranscription = async (audioBlob: Blob) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(audioBlob);
+    reader.onloadend = async () => {
+      const base64 = (reader.result as string).split(',')[1];
+      const text = await transcribeAudio(base64);
+      if (text.length > 3) handleSendMessage(`(Auto-Caption): ${text}`);
+    };
+  };
+
+  return (
+    <div className="relative w-full h-full flex flex-col bg-black overflow-hidden font-sans">
+      <header className="h-14 flex items-center justify-between px-6 bg-gradient-to-b from-black/80 to-transparent z-20 absolute top-0 left-0 right-0">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 group">
+            <div className="w-6 h-6 rounded-sm bg-blue-600 flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            </div>
+            <span className="text-white text-sm font-bold tracking-tight uppercase">Orbit</span>
+          </div>
+          <div className="w-px h-4 bg-white/10" />
+          <span className="text-white/70 font-medium text-xs tracking-tight">{roomName}</span>
+        </div>
+        <div className="flex items-center gap-4">
+           <div className="flex items-center gap-2 px-3 py-1 bg-neutral-900 border border-white/5 rounded text-[10px] font-bold text-neutral-400">
+             <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+             E2E ENCRYPTED
+           </div>
+        </div>
+      </header>
+
+      <main className="flex-1 relative flex overflow-hidden">
+        <div className={`flex-1 transition-all duration-500 ease-in-out ${showSidebar ? 'mr-[380px]' : ''}`}>
+           <ParticipantGrid participants={participants} />
+        </div>
+
+        <Sidebar 
+          isOpen={showSidebar} 
+          tab={sidebarTab} 
+          onClose={() => setShowSidebar(false)}
+          messages={messages}
+          participants={participants}
+          onSendMessage={handleSendMessage}
+          onKick={handleKickParticipant}
+        />
+      </main>
+
+      <ControlDock 
+        isMuted={isMuted}
+        onToggleMute={() => setIsMuted(!isMuted)}
+        isVideoOff={isVideoOff}
+        onToggleVideo={() => setIsVideoOff(!isVideoOff)}
+        isSharingScreen={isSharingScreen}
+        onToggleScreenShare={() => setIsSharingScreen(!isSharingScreen)}
+        isHandRaised={isHandRaised}
+        onToggleHand={() => setIsHandRaised(!isHandRaised)}
+        onLeave={onLeave}
+        onToggleSidebar={(tab) => {
+          if (showSidebar && sidebarTab === tab) setShowSidebar(false);
+          else { setShowSidebar(true); setSidebarTab(tab); }
+        }}
+        activeSidebarTab={showSidebar ? sidebarTab : null}
+        aiActive={aiActive}
+        aiConnecting={aiConnecting}
+        onToggleAi={() => aiActive ? stopAi() : startAi()}
+        onTranscribe={handleTranscription}
+      />
+
+      <div className="absolute top-20 right-6 z-[60] flex flex-col gap-2">
+        {toasts.map(t => (
+          <div key={t.id} className={`px-4 py-2.5 rounded border backdrop-blur-md animate-in slide-in-from-right-4 duration-300 shadow-xl ${t.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-500' : t.type === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-500' : 'bg-neutral-900/90 border-white/5 text-white'} text-[11px] font-bold uppercase tracking-wider`}>
+             {t.text}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default Room;

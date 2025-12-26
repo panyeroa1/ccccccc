@@ -10,18 +10,27 @@ const ParticipantGrid: React.FC<ParticipantGridProps> = ({ participants }) => {
   const [simulatedSpeakingIds, setSimulatedSpeakingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    // Organic simulation: participants join/leave the "speaking" state at random intervals
     const interval = setInterval(() => {
       setSimulatedSpeakingIds(prev => {
-        const next = new Set<string>();
+        const next = new Set(prev);
         participants.forEach(p => {
+          // Only simulate for remote participants, excluding AI which is handled by its own logic
           if (p.id !== 'local-user' && p.role !== ParticipantRole.AI) {
-            // ~20% chance to simulate speaking for remote users
-            if (Math.random() > 0.8) next.add(p.id);
+            const isCurrentlySimulated = next.has(p.id);
+            
+            if (isCurrentlySimulated) {
+              // 40% chance to stop speaking if currently active
+              if (Math.random() > 0.6) next.delete(p.id);
+            } else {
+              // 15% chance to start speaking if silent
+              if (Math.random() > 0.85) next.add(p.id);
+            }
           }
         });
         return next;
       });
-    }, 3000);
+    }, 1500);
     return () => clearInterval(interval);
   }, [participants]);
 
@@ -68,7 +77,7 @@ const ParticipantTile: React.FC<{
   const isSharing = participant.isSharingScreen;
   const isHandRaised = participant.isHandRaised;
 
-  // Orbit Design System: Sharp edges, high-contrast, electric blue accents
+  // Orbit Premium Style: High contrast, Electric Blue accents, layered depth
   const borderStyle = isCurrentlySpeaking 
     ? 'border-2 border-blue-500 z-10' 
     : 'border border-white/10 z-0';
@@ -84,7 +93,7 @@ const ParticipantTile: React.FC<{
   return (
     <div className={`relative bg-[#0d0d0d] rounded-sm overflow-hidden flex items-center justify-center transition-all duration-300 ${borderStyle} ${isSolo ? 'w-full h-full' : ''}`}>
       {/* Media Layer */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 overflow-hidden">
         {isSharing ? (
           <div className="w-full h-full bg-black flex flex-col items-center justify-center">
             <svg className="w-12 h-12 text-blue-500 opacity-30 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
@@ -92,7 +101,7 @@ const ParticipantTile: React.FC<{
           </div>
         ) : (participant.isVideoOff || participant.role === ParticipantRole.AI) ? (
           <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center">
-             <div className={`${isSolo ? 'w-44 h-44 text-6xl' : 'w-24 h-24 text-3xl'} rounded-full flex items-center justify-center font-light transition-all duration-700 ${participant.role === ParticipantRole.AI ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20 shadow-[0_0_40px_rgba(37,99,235,0.05)]' : 'bg-neutral-900 text-neutral-600 border border-white/5 shadow-inner'}`}>
+             <div className={`${isSolo ? 'w-44 h-44 text-6xl' : 'w-24 h-24 text-3xl'} rounded-full flex items-center justify-center font-light transition-all duration-700 ${participant.role === ParticipantRole.AI ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20' : 'bg-neutral-900 text-neutral-600 border border-white/5'}`}>
                 {participant.role === ParticipantRole.AI ? (
                   <svg className={`${isSolo ? 'w-20 h-20' : 'w-10 h-10'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                 ) : participant.name ? participant.name.charAt(0).toUpperCase() : '?'}
@@ -102,20 +111,20 @@ const ParticipantTile: React.FC<{
           <img 
             src={`https://picsum.photos/seed/${participant.id}/1280/720`} 
             alt={participant.name} 
-            className={`w-full h-full object-cover transition-all duration-700 ${isCurrentlySpeaking ? 'scale-[1.02] brightness-110' : 'scale-100 brightness-100'}`}
+            className={`w-full h-full object-cover transition-all duration-700 ${isCurrentlySpeaking ? 'scale-[1.03] brightness-110' : 'scale-100 brightness-100'}`}
           />
         )}
       </div>
 
-      {/* Enhanced Speaking Glow Overlay */}
+      {/* Advanced Speaking Visuals */}
       {isCurrentlySpeaking && (
         <div className="absolute inset-0 pointer-events-none z-10">
-          {/* Outer expanding ring pulse */}
-          <div className="absolute inset-0 border-[4px] border-blue-500/0 animate-orbit-pulse-ring" />
-          {/* Inner soft glow aura */}
-          <div className="absolute inset-0 shadow-[inset_0_0_50px_rgba(59,130,246,0.3)] animate-orbit-glow" />
-          {/* Crisp accent border */}
-          <div className="absolute inset-0 border-2 border-blue-400/20" />
+          {/* Energy Pulse Ring */}
+          <div className="absolute inset-0 border-[5px] border-blue-500/0 animate-orbit-pulse-ring" />
+          {/* Breathing Aura */}
+          <div className="absolute inset-0 shadow-[inset_0_0_60px_rgba(59,130,246,0.35)] animate-orbit-glow" />
+          {/* Inner Sharp Border */}
+          <div className="absolute inset-0 border-2 border-blue-400/10" />
         </div>
       )}
 
@@ -126,8 +135,8 @@ const ParticipantTile: React.FC<{
         </div>
       )}
 
-      {/* Premium Name Label (Bottom Left) */}
-      <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-black/80 px-3 py-1.5 rounded-[2px] backdrop-blur-md z-20 border border-white/10 transition-transform duration-300">
+      {/* Name Label with Micro-Waveform */}
+      <div className={`absolute bottom-3 left-3 flex items-center gap-2 bg-black/80 px-3 py-1.5 rounded-[2px] backdrop-blur-md z-20 border border-white/10 transition-all duration-300 ${isCurrentlySpeaking ? 'translate-x-1' : ''}`}>
         <span className="text-white text-[11px] font-bold tracking-tight">{participant.name || 'Unknown'} {isLocal && '(You)'}</span>
         
         {participant.isMuted ? (
@@ -141,33 +150,33 @@ const ParticipantTile: React.FC<{
         )}
       </div>
       
-      {/* Jitsi-style Connection Dot (Bottom Right) */}
+      {/* Jitsi-style Connection Dot */}
       <div className="absolute bottom-3 right-3 flex items-center gap-1 z-20">
         <div className={`w-2 h-2 rounded-full border border-black/40 ${getConnectionColor()}`} />
       </div>
 
       <style>{`
         @keyframes orbit-pulse-ring {
-          0% { transform: scale(0.98); border-color: rgba(59, 130, 246, 0.5); border-width: 4px; }
-          100% { transform: scale(1.04); border-color: rgba(59, 130, 246, 0); border-width: 1px; }
+          0% { transform: scale(0.98); border-color: rgba(59, 130, 246, 0.6); border-width: 5px; }
+          100% { transform: scale(1.06); border-color: rgba(59, 130, 246, 0); border-width: 1px; }
         }
         @keyframes orbit-glow {
-          0%, 100% { box-shadow: inset 0 0 30px rgba(59, 130, 246, 0.2); }
-          50% { box-shadow: inset 0 0 60px rgba(59, 130, 246, 0.4); }
+          0%, 100% { box-shadow: inset 0 0 35px rgba(59, 130, 246, 0.25); }
+          50% { box-shadow: inset 0 0 70px rgba(59, 130, 246, 0.45); }
         }
         @keyframes orbit-wave {
-          0%, 100% { height: 20%; }
-          50% { height: 100%; }
+          0%, 100% { height: 25%; opacity: 0.6; }
+          50% { height: 100%; opacity: 1; }
         }
         .animate-orbit-pulse-ring {
-          animation: orbit-pulse-ring 1.8s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+          animation: orbit-pulse-ring 2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
         }
         .animate-orbit-glow {
-          animation: orbit-glow 2.5s ease-in-out infinite;
+          animation: orbit-glow 2.8s ease-in-out infinite;
         }
-        .animate-orbit-wave-1 { animation: orbit-wave 0.5s ease-in-out infinite; }
-        .animate-orbit-wave-2 { animation: orbit-wave 0.7s ease-in-out infinite 0.1s; }
-        .animate-orbit-wave-3 { animation: orbit-wave 0.6s ease-in-out infinite 0.2s; }
+        .animate-orbit-wave-1 { animation: orbit-wave 0.45s ease-in-out infinite; }
+        .animate-orbit-wave-2 { animation: orbit-wave 0.65s ease-in-out infinite 0.1s; }
+        .animate-orbit-wave-3 { animation: orbit-wave 0.55s ease-in-out infinite 0.2s; }
       `}</style>
     </div>
   );

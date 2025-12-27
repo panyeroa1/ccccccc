@@ -1,44 +1,69 @@
 
 import { createClient } from '@supabase/supabase-js';
-import { ChatMessage, Participant, ConnectionQuality, LiveCaption } from '../types';
+import { ChatMessage, Participant, ConnectionQuality, LiveCaption, RoomCommand } from '../types';
 
 const SUPABASE_URL = 'https://rcbuikbjqgykssiatxpo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_uTIwEo4TJBo_YkX-OWN9qQ_5HJvl4c5';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-/**
- * Enhanced error logger to prevent [object Object] logs by explicitly stringifying properties.
- */
 const logDbError = (context: string, error: any) => {
-  const message = error?.message || 'Unknown Error';
-  const code = error?.code || 'NO_CODE';
-  const details = error?.details || '';
-  const hint = error?.hint || '';
+  console.error(`DB_ERROR [${context}]:`, error?.message || error);
+};
 
-  const fullReport = `[${code}] ${message} ${details} ${hint}`.trim();
-  
-  console.error(`DB_ERROR [${context}]: ${fullReport}`);
-  
-  if (error.code === '42P01') {
-    console.warn(`CRITICAL: Table for '${context}' does not exist in Supabase. Please ensure your schema is initialized.`);
-  }
+// Known valid columns for participants to avoid schema cache issues with select('*')
+// Removed is_muted, is_video_off, is_sharing_screen as they appear to be missing from the schema
+const PARTICIPANT_COLUMNS = 'id, name, role, status, reaction, last_seen, room_id';
+const MESSAGE_COLUMNS = 'id, sender_id, sender_name, text, timestamp, is_ai, room_id';
+
+/** 
+ * COMMAND SYSTEM (Mute/Kick/Admit)
+ */
+export const sendRoomCommand = async (command: Omit<RoomCommand, 'id'>) => {
+  const { error } = await supabase
+    .from('commands')
+    .insert([{ 
+      id: crypto.randomUUID(),
+      room_id: command.room,
+      targetId: command.targetId,
+      type: command.type,
+      issuerId: command.issuerId
+    }]);
+  if (error) logDbError('sendRoomCommand', error);
+};
+
+export const subscribeToCommands = (roomName: string, onCommand: (cmd: RoomCommand) void) => {
+  return supabase
+    .channel(`commands:${roomName}`)
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'commands', filter: `room_id=eq.${roomName}` },
+      (payload) => {
+        const c = payload.new;
+        onCommand({
+          id: c.id,
+          room: c.room_id,
+          targetId: c.targetId,
+          type: c.type,
+          issuerId: c.issuerId
+        });
+      }
+    )
+    .subscribe();
 };
 
 /**
- * CAPTION OPERATIONS (Single Row Per Room)
+ * CAPTION OPERATIONS
  */
-
 export const upsertCaption = async (roomName: string, caption: LiveCaption) => {
   const { error } = await supabase
     .from('captions')
     .upsert([{
-      room: roomName,
+      room_id: roomName,
       text: caption.text,
       speaker_name: caption.speakerName,
       timestamp: caption.timestamp
-    }], { onConflict: 'room' });
-
+    }], { onConflict: 'room_id' }); 
   if (error) logDbError('upsertCaption', error);
 };
 
@@ -47,14 +72,13 @@ export const subscribeToCaptions = (roomName: string, onUpdate: (caption: LiveCa
     .channel(`captions:${roomName}`)
     .on(
       'postgres_changes',
-      { event: '*', schema: 'public', table: 'captions', filter: `room=eq.${roomName}` },
+      { event: '*', schema: 'public', table: 'captions', filter: `room_id=eq.${roomName}` },
       (payload) => {
-        const c = payload.new;
-        if (c) {
+        if (payload.new) {
           onUpdate({
-            text: c.text,
-            speakerName: c.speaker_name,
-            timestamp: c.timestamp
+            text: payload.new.text,
+            speakerName: payload.new.speaker_name,
+            timestamp: payload.new.timestamp
           });
         }
       }
@@ -63,22 +87,19 @@ export const subscribeToCaptions = (roomName: string, onUpdate: (caption: LiveCa
 };
 
 /**
- * MESSAGES TABLE OPERATIONS
+ * MESSAGES
  */
-
 export const fetchMessages = async (roomName: string): Promise<ChatMessage[]> => {
   const { data, error } = await supabase
     .from('messages')
-    .select('*')
-    .eq('room', roomName)
-    .order('timestamp', { ascending: true })
-    .limit(50);
-
+    .select(MESSAGE_COLUMNS)
+    .eq('room_id', roomName)
+    .order('timestamp', { ascending: true });
+  
   if (error) {
     logDbError('fetchMessages', error);
     return [];
   }
-
   return data.map(m => ({
     id: m.id,
     senderId: m.sender_id,
@@ -90,18 +111,15 @@ export const fetchMessages = async (roomName: string): Promise<ChatMessage[]> =>
 };
 
 export const sendMessageToSupabase = async (roomName: string, message: ChatMessage) => {
-  const { error } = await supabase
-    .from('messages')
-    .insert([{
-      id: message.id,
-      room: roomName,
-      sender_id: message.senderId,
-      sender_name: message.senderName,
-      text: message.text,
-      timestamp: message.timestamp,
-      is_ai: message.isAi || false
-    }]);
-
+  const { error } = await supabase.from('messages').insert([{
+    id: message.id,
+    room_id: roomName,
+    sender_id: message.senderId,
+    sender_name: message.senderName,
+    text: message.text,
+    timestamp: message.timestamp,
+    is_ai: message.isAi || false
+  }]);
   if (error) logDbError('sendMessageToSupabase', error);
 };
 
@@ -110,78 +128,77 @@ export const subscribeToMessages = (roomName: string, onMessage: (msg: ChatMessa
     .channel(`messages:${roomName}`)
     .on(
       'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'messages', filter: `room=eq.${roomName}` },
-      (payload) => {
-        const m = payload.new;
-        onMessage({
-          id: m.id,
-          senderId: m.sender_id,
-          senderName: m.sender_name,
-          text: m.text,
-          timestamp: m.timestamp,
-          isAi: m.is_ai
-        });
-      }
+      { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${roomName}` },
+      (payload) => onMessage({
+        id: payload.new.id,
+        senderId: payload.new.sender_id,
+        senderName: payload.new.sender_name,
+        text: payload.new.text,
+        timestamp: payload.new.timestamp,
+        isAi: payload.new.is_ai
+      })
     )
     .subscribe();
 };
 
 /**
- * PARTICIPANTS TABLE OPERATIONS
+ * PARTICIPANTS
  */
-
 export const syncParticipant = async (roomName: string, p: Participant) => {
+  // Explicitly construct the record to avoid leaking extra fields that might not exist in the DB
+  const record = {
+    id: p.id,
+    room_id: roomName,
+    name: p.name,
+    role: p.role,
+    status: p.status,
+    reaction: p.reaction || null,
+    last_seen: Date.now()
+  };
+
   const { error } = await supabase
     .from('participants')
-    .upsert([{
-      id: p.id,
-      room: roomName,
-      name: p.name,
-      role: p.role,
-      is_muted: p.isMuted,
-      is_video_off: p.isVideoOff,
-      is_sharing_screen: p.isSharingScreen,
-      is_hand_raised: p.isHandRaised || false,
-      // Removed 'status' / 'connection' column to fix PGRST204 errors
-      last_seen: Date.now()
-    }], { onConflict: 'id' });
-
+    .upsert([record], { onConflict: 'id' });
+  
   if (error) logDbError('syncParticipant', error);
 };
 
 export const fetchParticipants = async (roomName: string): Promise<Participant[]> => {
-  const cutoff = Date.now() - 60000;
+  const cutoff = Date.now() - 30000;
   const { data, error } = await supabase
     .from('participants')
-    .select('*')
-    .eq('room', roomName)
+    .select(PARTICIPANT_COLUMNS)
+    .eq('room_id', roomName)
     .gt('last_seen', cutoff);
 
   if (error) {
     logDbError('fetchParticipants', error);
     return [];
   }
-
+  
   return data.map(p => ({
     id: p.id,
     name: p.name,
-    role: p.role as any,
-    isMuted: p.is_muted,
-    isVideoOff: p.is_video_off,
-    isSharingScreen: p.is_sharing_screen,
+    role: p.role,
+    status: p.status || 'approved',
+    isMuted: false, // Defaulted as DB column is missing
+    isVideoOff: false, // Defaulted as DB column is missing
+    isSharingScreen: false, // Defaulted as DB column is missing
     isSpeaking: false,
-    isHandRaised: p.is_hand_raised,
-    connection: 'good' as ConnectionQuality // Default to good since DB doesn't support this column
+    isHandRaised: false,
+    reaction: p.reaction,
+    connection: 'good'
   }));
 };
 
 export const subscribeToParticipants = (roomName: string, onUpdate: () => void) => {
   return supabase
     .channel(`participants:${roomName}`)
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'participants', filter: `room=eq.${roomName}` },
-      () => onUpdate()
-    )
+    .on('postgres_changes', { 
+      event: '*', 
+      schema: 'public', 
+      table: 'participants', 
+      filter: `room_id=eq.${roomName}` 
+    }, () => onUpdate())
     .subscribe();
 };

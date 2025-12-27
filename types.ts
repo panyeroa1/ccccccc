@@ -12,12 +12,15 @@ export enum ParticipantRole {
   AI = 'AI'
 }
 
+export type ParticipantStatus = 'waiting' | 'approved' | 'denied';
+
 export type ConnectionQuality = 'good' | 'fair' | 'poor';
 
 export interface Participant {
   id: string;
   name: string;
   role: ParticipantRole;
+  status: ParticipantStatus;
   isMuted: boolean;
   isVideoOff: boolean;
   isSharingScreen: boolean;
@@ -25,7 +28,16 @@ export interface Participant {
   isHandRaised?: boolean;
   avatar?: string;
   connection?: ConnectionQuality;
-  reaction?: string; // Current active reaction
+  reaction?: string;
+  lastSeen?: number;
+}
+
+export interface RoomCommand {
+  id: string;
+  room: string;
+  targetId: string | 'all';
+  type: 'MUTE' | 'KICK' | 'ADMIT' | 'DENY';
+  issuerId: string;
 }
 
 export interface ChatMessage {

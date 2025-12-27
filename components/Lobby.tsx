@@ -1,5 +1,7 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { DeviceSettings } from '../types';
+import Logo from './Logo';
 
 interface LobbyProps {
   userName: string;
@@ -81,6 +83,10 @@ const Lobby: React.FC<LobbyProps> = ({ userName, setUserName, roomName, onJoin, 
           />
         )}
         
+        <div className="absolute top-12 left-12 animate-in fade-in duration-700">
+           <Logo className="w-12 h-12" />
+        </div>
+
         <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-black/80 backdrop-blur-3xl px-8 py-4 border border-white/10">
           <button 
             onClick={toggleAudio}
@@ -167,5 +173,4 @@ const Lobby: React.FC<LobbyProps> = ({ userName, setUserName, roomName, onJoin, 
   );
 };
 
-// Add missing default export
 export default Lobby;

@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import Logo from './Logo';
 
 interface LandingProps {
   onStart: (userName: string, roomName: string) => void;
@@ -27,13 +28,8 @@ const Landing: React.FC<LandingProps> = ({ onStart }) => {
     <div className="relative w-full h-full flex flex-col items-center justify-center bg-black overflow-hidden font-sans">
       {/* Splash Screen Overlay */}
       <div className={`fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center transition-opacity duration-1000 ease-in-out ${showSplash ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-        <div className="relative w-48 h-48 mb-12">
-           <img 
-             src="/images/logo-only.jpg" 
-             alt="Orbit Logo" 
-             className="w-full h-full object-contain animate-in zoom-in-50 fade-in duration-1000"
-           />
-           <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent h-1/4 bottom-0 pointer-events-none" />
+        <div className="relative mb-12 animate-in zoom-in-50 fade-in duration-1000">
+           <Logo className="w-48 h-48" />
         </div>
         <div className="flex flex-col items-center gap-4">
           <h2 className="text-2xl font-light text-white uppercase tracking-[1em] ml-[1em] animate-pulse">Orbit</h2>
@@ -45,9 +41,7 @@ const Landing: React.FC<LandingProps> = ({ onStart }) => {
 
       <header className="absolute top-0 left-0 right-0 p-10 flex justify-between items-center z-10">
         <div className="flex items-center gap-4 group cursor-pointer">
-          <div className="w-10 h-10 rounded-none bg-white flex items-center justify-center overflow-hidden shadow-[0_0_30px_rgba(255,255,255,0.1)]">
-            <img src="/images/logo-only.jpg" alt="Orbit Logo" className="w-full h-full object-contain" />
-          </div>
+          <Logo className="w-10 h-10 transition-transform group-hover:scale-110 duration-500" />
           <span className="text-2xl font-light tracking-widest text-white uppercase">Orbit</span>
         </div>
       </header>

@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { SidebarTab } from '../types';
 
 interface ControlDockProps {
   isMuted: boolean;
@@ -20,8 +21,8 @@ interface ControlDockProps {
   onOpenIntegrations: () => void;
   onOpenSettings: () => void;
   onLeave: () => void;
-  onToggleSidebar: (tab: 'chat' | 'participants') => void;
-  activeSidebarTab: 'chat' | 'participants' | null;
+  onToggleSidebar: (tab: SidebarTab) => void;
+  activeSidebarTab: SidebarTab | null;
   aiActive: boolean;
   aiConnecting: boolean;
   onToggleAi: () => void;
@@ -138,6 +139,12 @@ const ControlDock: React.FC<ControlDockProps> = ({
 
         <div className="flex items-center gap-2">
           <ControlButton 
+            onClick={() => onToggleSidebar('info')} 
+            active={activeSidebarTab === 'info'} 
+            icon={<InviteIcon />}
+            tooltip="INVITE_SESSION"
+          />
+          <ControlButton 
             onClick={() => onToggleSidebar('chat')} 
             active={activeSidebarTab === 'chat'} 
             icon={<ChatIcon />}
@@ -206,5 +213,6 @@ const SettingsIcon = () => <svg className="w-6 h-6" fill="none" viewBox="0 0 24 
 const CaptionIcon = () => <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>;
 const RecordIcon = () => <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><circle cx="12" cy="12" r="3" strokeWidth={4} /><path strokeLinecap="round" strokeLinejoin="round" d="M12 2a10 10 0 110 20 10 10 0 010-20z" /></svg>;
 const HangupIcon = () => <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M12 4c-4.41 0-8 3.59-8 8v1.45l2.42-2.42c.39-.39 1.02-.39 1.41 0l1.22 1.22c.39.39.39 1.02 0 1.41L6.41 16.41c-.39.39-1.02.39-1.41 0L2.29 13.71c-.39-.39-.39-1.02 0-1.41l1.42-1.42C4.12 6.54 8.65 3 14 3c5.35 0 9.88 3.54 10.29 8.88l1.42 1.42c.39.39.39 1.02 0 1.41l-2.71 2.71c-.39.39-1.02.39-1.41 0l-2.64-2.64c-.39-.39-.39-1.02 0-1.41l1.22-1.22c.39-.39.39-1.02 0-1.41L21.55 13.45V12c0-4.41-3.59-8-8-8z" /></svg>;
+const InviteIcon = () => <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>;
 
 export default ControlDock;

@@ -101,26 +101,36 @@ const ParticipantGrid: React.FC<ParticipantGridProps> = ({ participants }) => {
 const ConnectionIndicator: React.FC<{ quality?: ConnectionQuality }> = ({ quality = 'good' }) => {
   const bars = quality === 'poor' ? 1 : quality === 'fair' ? 2 : 4;
   
-  // Muted colors for Orbit design system
-  const colorClass = 
-    quality === 'poor' ? 'bg-[#ff3b30]' : 
-    quality === 'fair' ? 'bg-[#ffcc00]' : 
-    'bg-[#34c759]';
+  // High-fidelity semantic colors
+  const colorHex = 
+    quality === 'poor' ? '#ff3b30' : 
+    quality === 'fair' ? '#ffcc00' : 
+    '#34c759';
 
   return (
     <div className="group relative flex items-center gap-2">
-      <div className="flex items-end gap-[2px] h-3 px-1">
+      <div className="flex items-end gap-[1.5px] h-3.5 px-2 py-0.5 bg-black/40 backdrop-blur-md rounded-sm border border-white/5 transition-all hover:border-white/20">
         {[0, 1, 2, 3].map((i) => (
           <div 
             key={i}
-            className={`w-1 transition-all duration-500 ${i < bars ? `${colorClass} ${quality === 'poor' ? 'animate-pulse' : ''}` : 'bg-neutral-800'}`}
-            style={{ height: `${(i + 1) * 25}%` }}
+            className={`w-[3px] transition-all duration-700 ease-out rounded-[1px] ${i < bars ? '' : 'bg-neutral-800'}`}
+            style={{ 
+              height: `${(i + 1) * 25}%`,
+              backgroundColor: i < bars ? colorHex : undefined,
+              boxShadow: i < bars ? `0 0 8px ${colorHex}44` : 'none',
+              animation: (i < bars && quality === 'poor') ? 'pulse 1s infinite' : 'none'
+            }}
           />
         ))}
       </div>
-      <span className="hidden group-hover:block absolute right-full mr-2 px-2 py-1 bg-black/90 border border-white/10 text-[8px] font-black uppercase tracking-widest whitespace-nowrap text-white">
-        LINK_{quality.toUpperCase()}
-      </span>
+      <div className="hidden group-hover:flex absolute right-0 bottom-full mb-3 flex-col items-center">
+        <div className="bg-neutral-950 border border-white/10 px-3 py-1.5 shadow-2xl backdrop-blur-3xl whitespace-nowrap">
+           <span className="text-[8px] font-black uppercase tracking-[0.4em] text-white">
+             {quality === 'good' ? 'OPTIMAL_UPLINK' : quality === 'fair' ? 'DEGRADED_SIGNAL' : 'CRITICAL_LATENCY'}
+           </span>
+        </div>
+        <div className="w-px h-2 bg-white/10" />
+      </div>
     </div>
   );
 };
@@ -139,13 +149,13 @@ const ParticipantTile: React.FC<{
   const isHandRaised = participant.isHandRaised;
 
   const borderStyle = isCurrentlySpeaking 
-    ? 'border-2 border-white shadow-[0_0_40px_rgba(255,255,255,0.1)] z-10 scale-[0.99]' 
+    ? 'border-2 border-white shadow-[0_0_60px_rgba(255,255,255,0.1)] z-10 scale-[0.99]' 
     : isMini ? 'border border-white/5' : 'border border-white/5';
 
   const avatarSize = isStage ? 'w-48 h-48 text-7xl' : isSolo ? 'w-64 h-64 text-9xl' : isMini ? 'w-12 h-12 text-xl' : 'w-24 h-24 text-4xl';
 
   return (
-    <div className={`relative bg-neutral-950 overflow-hidden flex items-center justify-center transition-all duration-700 w-full h-full ${borderStyle}`}>
+    <div className={`relative bg-neutral-950 overflow-hidden flex items-center justify-center transition-all duration-700 w-full h-full group ${borderStyle}`}>
       <div className="absolute inset-0 overflow-hidden">
         {isSharing ? (
           <div className="w-full h-full bg-black flex flex-col items-center justify-center relative">
@@ -169,6 +179,13 @@ const ParticipantTile: React.FC<{
         )}
       </div>
 
+      {/* Orbit Verified Badge - Fixed visibility */}
+      {!isMini && (
+        <div className="absolute top-6 left-6 z-30 opacity-60 pointer-events-none group-hover:opacity-100 transition-opacity duration-700">
+           <img src="/images/logo-only.jpg" alt="Verified" className="w-8 h-8 object-contain" />
+        </div>
+      )}
+
       {participant.reaction && !isMini && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-40">
            <div className="text-8xl animate-orbit-reaction filter grayscale">
@@ -188,7 +205,7 @@ const ParticipantTile: React.FC<{
       )}
 
       {isHandRaised && (
-        <div className={`absolute left-6 bg-white p-2 shadow-2xl z-20 ${isMini ? 'top-2 scale-75' : 'top-6'}`}>
+        <div className={`absolute right-6 bg-white p-2 shadow-2xl z-20 ${isMini ? 'top-2 scale-75' : 'top-6'}`}>
            <svg className="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 20 20"><path d="M10.5 4.5a1.5 1.5 0 113 0v4.382l.224.112A3 3 0 0115.382 11.7l-.427 1.282a5 5 0 01-4.743 3.418H7a1 1 0 01-1-1v-2.122a1 1 0 01.3-.707L8.586 10.3l.164-.164a2.5 2.5 0 00.75-1.768V4.5z" /></svg>
         </div>
       )}
@@ -216,6 +233,11 @@ const ParticipantTile: React.FC<{
         }
         .animate-orbit-glow { animation: orbit-glow 3s ease-in-out infinite; }
         .animate-orbit-reaction { animation: orbit-reaction 4s cubic-bezier(0.1, 0.7, 0.1, 1) forwards; }
+        @keyframes pulse {
+          0% { opacity: 1; }
+          50% { opacity: 0.3; }
+          100% { opacity: 1; }
+        }
       `}</style>
     </div>
   );

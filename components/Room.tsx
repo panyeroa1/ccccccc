@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Participant, ParticipantRole, ChatMessage, DeviceSettings, ToastMessage, ConnectionQuality, LiveCaption } from '../types';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Participant, ParticipantRole, ChatMessage, DeviceSettings, ToastMessage, ConnectionQuality, LiveCaption, SidebarTab } from '../types';
 import ParticipantGrid from './ParticipantGrid';
 import ControlDock from './ControlDock';
 import Sidebar from './Sidebar';
@@ -22,10 +22,13 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [showSidebar, setShowSidebar] = useState(false);
-  const [sidebarTab, setSidebarTab] = useState<'chat' | 'participants'>('chat');
+  const [sidebarTab, setSidebarTab] = useState<SidebarTab>('chat');
   const [showSettings, setShowSettings] = useState(false);
   const [currentDevices, setCurrentDevices] = useState<DeviceSettings>(initialDevices);
   
+  // Generate a random passcode once per session
+  const passcode = useMemo(() => Math.floor(100000 + Math.random() * 900000).toString(), []);
+
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const screenStreamRef = useRef<MediaStream | null>(null);
   const [activeCaption, setActiveCaption] = useState<LiveCaption | null>(null);
@@ -187,14 +190,22 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
     <div className="relative w-full h-full flex flex-col bg-black overflow-hidden font-sans">
       <header className="h-16 flex items-center justify-between px-10 bg-black/80 backdrop-blur-3xl z-20 absolute top-0 left-0 right-0 border-b border-white/5">
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-3 group cursor-default">
-            <div className="w-8 h-8 bg-white flex items-center justify-center">
-              <svg className="w-5 h-5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+          <button 
+            onClick={() => { setShowSidebar(true); setSidebarTab('info'); }}
+            className="flex items-center gap-3 group cursor-pointer"
+          >
+            <div className="w-8 h-8 flex items-center justify-center">
+              <img src="/images/logo-only.jpg" alt="Orbit" className="w-full h-full object-contain" />
             </div>
             <span className="text-white text-base font-black tracking-tight uppercase">Orbit</span>
-          </div>
+          </button>
           <div className="w-px h-6 bg-white/10" />
-          <span className="text-neutral-500 font-black text-[11px] tracking-[0.3em] uppercase">{roomName}</span>
+          <button 
+            onClick={() => { setShowSidebar(true); setSidebarTab('info'); }}
+            className="text-neutral-500 hover:text-white transition-colors font-black text-[11px] tracking-[0.3em] uppercase"
+          >
+            {roomName}
+          </button>
           
           {isRecording && (
             <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1 rounded-sm">
@@ -228,6 +239,9 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
           messages={messages}
           participants={participants}
           onSendMessage={handleSendMessage}
+          roomName={roomName}
+          passcode={passcode}
+          onCopyInvite={() => addToast("INVITE_COPIED", "success")}
         />
       </main>
 

@@ -1,23 +1,29 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Participant, ChatMessage } from '../types';
+import { Participant, ChatMessage, SidebarTab } from '../types';
 
 interface SidebarProps {
   isOpen: boolean;
-  tab: 'chat' | 'participants';
+  tab: SidebarTab;
   onClose: () => void;
   messages: ChatMessage[];
   participants: Participant[];
   onSendMessage: (text: string) => void;
   onKick?: (id: string) => void;
+  roomName?: string;
+  passcode?: string;
+  onCopyInvite?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, tab, onClose, messages, participants, onSendMessage, onKick }) => {
+const Sidebar: React.FC<SidebarProps> = ({ 
+  isOpen, tab, onClose, messages, participants, onSendMessage, onKick, 
+  roomName, passcode, onCopyInvite 
+}) => {
   const [inputValue, setInputValue] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (scrollRef.current) {
+    if (scrollRef.current && tab === 'chat') {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, tab]);
@@ -28,6 +34,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, tab, onClose, messages, parti
       onSendMessage(inputValue);
       setInputValue('');
     }
+  };
+
+  const handleCopyInvite = () => {
+    const inviteText = `Join my Orbit meeting:
+Link: ${window.location.origin}/orbit.ai/${roomName}
+Room ID: ${roomName}
+Passcode: ${passcode}`;
+    
+    navigator.clipboard.writeText(inviteText);
+    onCopyInvite?.();
   };
 
   return (
@@ -64,7 +80,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, tab, onClose, messages, parti
               ))
             )}
           </div>
-        ) : (
+        ) : tab === 'participants' ? (
           <div className="space-y-2">
             {participants.map(p => (
               <div key={p.id} className="flex items-center justify-between p-5 hover:bg-white/5 transition-all group border border-transparent hover:border-white/5">
@@ -84,6 +100,48 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, tab, onClose, messages, parti
                 </div>
               </div>
             ))}
+          </div>
+        ) : (
+          <div className="space-y-12 animate-in fade-in duration-500">
+             <div className="space-y-6">
+                <label className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.4em]">Meeting Uplink</label>
+                <div className="bg-neutral-900 border border-white/5 p-6 flex items-center justify-between">
+                   <span className="text-xs font-bold text-white tracking-tight truncate mr-4">orbit.ai/{roomName}</span>
+                   <button 
+                     onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/orbit.ai/${roomName}`); onCopyInvite?.(); }}
+                     className="p-3 bg-white text-black hover:bg-neutral-200 transition-all"
+                   >
+                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                   </button>
+                </div>
+             </div>
+
+             <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-4">
+                   <label className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.4em]">Room_ID</label>
+                   <div className="bg-neutral-900 border border-white/5 p-6 text-white text-xl font-black uppercase tracking-tighter">
+                      {roomName}
+                   </div>
+                </div>
+                <div className="space-y-4">
+                   <label className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.4em]">Passcode</label>
+                   <div className="bg-neutral-900 border border-white/5 p-6 text-white text-xl font-black tracking-widest">
+                      {passcode}
+                   </div>
+                </div>
+             </div>
+
+             <div className="pt-12 border-t border-white/5">
+                <button 
+                  onClick={handleCopyInvite}
+                  className="w-full py-6 bg-white hover:bg-neutral-200 text-black text-xs font-black uppercase tracking-[0.5em] transition-all shadow-xl active:scale-[0.98]"
+                >
+                  Copy Full Invite
+                </button>
+                <p className="mt-6 text-[9px] font-black text-neutral-800 uppercase tracking-[0.3em] text-center leading-relaxed">
+                   Authorized void-protocol transmission only.
+                </p>
+             </div>
           </div>
         )}
       </div>

@@ -54,3 +54,5 @@ export interface LiveCaption {
   speakerName: string;
   timestamp: number;
 }
+
+export type SidebarTab = 'chat' | 'participants' | 'info';

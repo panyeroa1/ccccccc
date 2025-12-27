@@ -26,6 +26,8 @@ export interface Participant {
   isSharingScreen: boolean;
   isSpeaking: boolean;
   isHandRaised?: boolean;
+  isMirrored?: boolean;
+  isBeautified?: boolean;
   avatar?: string;
   connection?: ConnectionQuality;
   reaction?: string;
@@ -36,7 +38,7 @@ export interface RoomCommand {
   id: string;
   room: string;
   targetId: string | 'all';
-  type: 'MUTE' | 'KICK' | 'ADMIT' | 'DENY';
+  type: 'MUTE' | 'KICK' | 'ADMIT' | 'DENY' | 'RAISE_HAND';
   issuerId: string;
 }
 
@@ -53,6 +55,9 @@ export interface DeviceSettings {
   audioInputId: string;
   videoInputId: string;
   audioOutputId: string;
+  isMirrored: boolean;
+  isBeautified: boolean;
+  backgroundEffect: 'none' | 'blur' | 'orbit';
 }
 
 export interface ToastMessage {

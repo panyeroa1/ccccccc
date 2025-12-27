@@ -14,11 +14,23 @@ const logDbError = (context: string, error: any) => {
 const PARTICIPANT_COLUMNS = 'id, name, role, status, last_seen, room_id';
 const MESSAGE_COLUMNS = 'id, sender_id, sender_name, text, timestamp, is_ai, room_id';
 
+/**
+ * AUTHENTICATION (Anonymous Session)
+ */
+export const ensureAuth = async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    const { data, error } = await supabase.auth.signInAnonymously();
+    if (error) logDbError('AuthSignIn', error);
+    return data.session;
+  }
+  return session;
+};
+
 /** 
  * SIGNALING (WebRTC SDP/ICE Exchange)
  */
 export const sendSignal = async (roomName: string, targetId: string, senderId: string, signal: any) => {
-  // We use a high-performance broadcast channel for signaling to avoid table bloat
   await supabase.channel(`signaling:${roomName}`).send({
     type: 'broadcast',
     event: 'signal',
@@ -74,63 +86,8 @@ export const subscribeToCommands = (roomName: string, onCommand: (cmd: RoomComma
 };
 
 /**
- * CAPTION OPERATIONS
- */
-export const upsertCaption = async (roomName: string, caption: LiveCaption) => {
-  const { error } = await supabase
-    .from('captions')
-    .upsert([{
-      room_id: roomName,
-      text: caption.text,
-      speaker_name: caption.speakerName,
-      timestamp: caption.timestamp
-    }], { onConflict: 'room_id' }); 
-  if (error) logDbError('upsertCaption', error);
-};
-
-export const subscribeToCaptions = (roomName: string, onUpdate: (caption: LiveCaption) => void) => {
-  return supabase
-    .channel(`captions:${roomName}`)
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'captions', filter: `room_id=eq.${roomName}` },
-      (payload) => {
-        if (payload.new) {
-          onUpdate({
-            text: payload.new.text,
-            speakerName: payload.new.speaker_name,
-            timestamp: payload.new.timestamp
-          });
-        }
-      }
-    )
-    .subscribe();
-};
-
-/**
  * MESSAGES
  */
-export const fetchMessages = async (roomName: string): Promise<ChatMessage[]> => {
-  const { data, error } = await supabase
-    .from('messages')
-    .select(MESSAGE_COLUMNS)
-    .eq('room_id', roomName)
-    .order('timestamp', { ascending: true });
-  
-  if (error) {
-    logDbError('fetchMessages', error);
-    return [];
-  }
-  return data.map(m => ({
-    id: m.id,
-    senderId: m.sender_id,
-    senderName: m.sender_name,
-    text: m.text,
-    timestamp: m.timestamp,
-    isAi: m.is_ai
-  }));
-};
-
 export const sendMessageToSupabase = async (roomName: string, message: ChatMessage) => {
   const { error } = await supabase.from('messages').insert([{
     id: message.id,
@@ -163,7 +120,7 @@ export const subscribeToMessages = (roomName: string, onMessage: (msg: ChatMessa
 };
 
 /**
- * PARTICIPANTS
+ * PARTICIPANTS (Presence & Admission)
  */
 export const syncParticipant = async (roomName: string, p: Participant) => {
   const record = {
@@ -205,7 +162,6 @@ export const fetchParticipants = async (roomName: string): Promise<Participant[]
     isSharingScreen: false, 
     isSpeaking: false,
     isHandRaised: false,
-    reaction: undefined,
     connection: 'good'
   }));
 };
@@ -219,5 +175,38 @@ export const subscribeToParticipants = (roomName: string, onUpdate: () => void) 
       table: 'participants', 
       filter: `room_id=eq.${roomName}` 
     }, () => onUpdate())
+    .subscribe();
+};
+
+// Fix: Implement upsertCaption for real-time transcription sync
+export const upsertCaption = async (roomName: string, caption: LiveCaption) => {
+  const { error } = await supabase
+    .from('captions')
+    .upsert([{ 
+      room_id: roomName,
+      text: caption.text,
+      speaker_name: caption.speakerName,
+      timestamp: caption.timestamp
+    }], { onConflict: 'room_id' });
+  if (error) logDbError('upsertCaption', error);
+};
+
+// Fix: Implement subscribeToCaptions for live transcription overlay
+export const subscribeToCaptions = (roomName: string, onCaption: (caption: LiveCaption) => void) => {
+  return supabase
+    .channel(`captions:${roomName}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'captions', filter: `room_id=eq.${roomName}` },
+      (payload) => {
+        if (payload.new) {
+          onCaption({
+            text: payload.new.text,
+            speakerName: payload.new.speaker_name,
+            timestamp: payload.new.timestamp
+          });
+        }
+      }
+    )
     .subscribe();
 };

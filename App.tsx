@@ -1,9 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RoomState, DeviceSettings } from './types';
 import Landing from './components/Landing';
 import Lobby from './components/Lobby';
 import Room from './components/Room';
+import { ensureAuth } from './services/supabaseService';
 
 const App: React.FC = () => {
   const [view, setView] = useState<RoomState>(RoomState.LANDING);
@@ -12,11 +13,17 @@ const App: React.FC = () => {
   const [devices, setDevices] = useState<DeviceSettings>({
     audioInputId: 'default',
     videoInputId: 'default',
-    audioOutputId: 'default'
+    audioOutputId: 'default',
+    isMirrored: true,
+    isBeautified: true,
+    backgroundEffect: 'none'
   });
 
+  useEffect(() => {
+    ensureAuth();
+  }, []);
+
   const handleCreateJoin = (_: string, room: string) => {
-    // We ignore the initial name as it's now collected in the Lobby
     setRoomName(room);
     setView(RoomState.LOBBY);
   };

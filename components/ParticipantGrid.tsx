@@ -143,18 +143,25 @@ const ParticipantTile: React.FC<{
   const isSharing = participant.isSharingScreen;
   const isHandRaised = participant.isHandRaised;
 
+  // Visual Priority: Speaking > Sharing > Normal
   const borderStyle = isCurrentlySpeaking 
-    ? 'border-2 border-blue-500 z-10 shadow-[0_0_25px_rgba(59,130,246,0.2)]' 
-    : 'border border-white/5 z-0';
+    ? 'border-2 border-blue-500 z-10 shadow-[0_0_25px_rgba(59,130,246,0.3)]' 
+    : isSharing 
+      ? 'border border-blue-600/50 z-1 shadow-[0_0_15px_rgba(37,99,235,0.1)]'
+      : 'border border-white/5 z-0';
 
   return (
     <div className={`relative bg-[#0d0d0d] rounded-sm overflow-hidden flex items-center justify-center transition-all duration-300 ${borderStyle} ${isSolo ? 'w-full h-full' : ''}`}>
       {/* Media Layer */}
       <div className="absolute inset-0 overflow-hidden">
         {isSharing ? (
-          <div className="w-full h-full bg-black flex flex-col items-center justify-center">
-            <svg className="w-12 h-12 text-blue-500 opacity-30 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-            <span className="text-white/20 text-[10px] font-bold uppercase tracking-[0.2em]">Screen Stream</span>
+          <div className="w-full h-full bg-black flex flex-col items-center justify-center relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-transparent pointer-events-none" />
+            <svg className="w-12 h-12 text-blue-500 opacity-30 mb-4 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+            <span className="text-white/20 text-[10px] font-bold uppercase tracking-[0.2em]">Live Screen Stream</span>
+            
+            {/* Scanline Effect for Screen Share */}
+            <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%]" />
           </div>
         ) : (participant.isVideoOff || participant.role === ParticipantRole.AI) ? (
           <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center">
@@ -182,7 +189,16 @@ const ParticipantTile: React.FC<{
         </div>
       )}
 
-      {/* Jitsi-style Raise Hand Overlay */}
+      {/* Screen Share High-Visibility Badge (Top Right) */}
+      {isSharing && (
+        <div className="absolute top-4 right-4 z-30 flex items-center gap-2 bg-blue-600 px-2 py-1 rounded-sm shadow-xl border border-white/10 animate-in fade-in zoom-in duration-300">
+          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+          <span className="text-[9px] font-black text-white uppercase tracking-widest leading-none">Presenting</span>
+          <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse ml-0.5" />
+        </div>
+      )}
+
+      {/* Jitsi-style Raise Hand Overlay (Top Left) */}
       {isHandRaised && (
         <div className="absolute top-4 left-4 bg-yellow-500 p-2 rounded-sm shadow-2xl animate-bounce z-20 border border-black/10">
            <svg className="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 20 20"><path d="M10.5 4.5a1.5 1.5 0 113 0v4.382l.224.112A3 3 0 0115.382 11.7l-.427 1.282a5 5 0 01-4.743 3.418H7a1 1 0 01-1-1v-2.122a1 1 0 01.3-.707L8.586 10.3l.164-.164a2.5 2.5 0 00.75-1.768V4.5z" /></svg>
@@ -236,4 +252,5 @@ const ParticipantTile: React.FC<{
   );
 };
 
+// Fix: Export ParticipantGrid as the default component so that it matches imports expecting a list of participants.
 export default ParticipantGrid;

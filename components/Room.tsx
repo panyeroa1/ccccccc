@@ -1,9 +1,11 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Participant, ParticipantRole, ChatMessage, DeviceSettings, ToastMessage, ConnectionQuality } from '../types';
+import { Participant, ParticipantRole, ChatMessage, DeviceSettings, ToastMessage, ConnectionQuality, LiveCaption } from '../types';
 import ParticipantGrid from './ParticipantGrid';
 import ControlDock from './ControlDock';
 import Sidebar from './Sidebar';
+import SettingsPage from './SettingsPage';
+import CaptionOverlay from './CaptionOverlay';
 import { useGeminiLive } from '../hooks/useGeminiLive';
 import { transcribeAudio } from '../services/geminiService';
 
@@ -14,13 +16,18 @@ interface RoomProps {
   devices: DeviceSettings;
 }
 
-const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices }) => {
+const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initialDevices }) => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [showSidebar, setShowSidebar] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<'chat' | 'participants'>('chat');
+  const [showSettings, setShowSettings] = useState(false);
+  const [currentDevices, setCurrentDevices] = useState<DeviceSettings>(initialDevices);
   
+  // Captions state
+  const [activeCaption, setActiveCaption] = useState<LiveCaption | null>(null);
+
   // New States for enhanced Control Dock
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
@@ -29,7 +36,17 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices }) => 
   const [isCaptionsActive, setIsCaptionsActive] = useState(false);
   const [isTranslateActive, setIsTranslateActive] = useState(false);
 
-  const { isActive: aiActive, isConnecting: aiConnecting, startSession: startAi, stopSession: stopAi } = useGeminiLive();
+  const handleLiveTranscription = useCallback((text: string, isUser: boolean) => {
+    setActiveCaption({
+      text,
+      speakerName: isUser ? userName : 'Orbit Assistant',
+      timestamp: Date.now()
+    });
+  }, [userName]);
+
+  const { isActive: aiActive, isConnecting: aiConnecting, startSession: startAi, stopSession: stopAi } = useGeminiLive({
+    onTranscription: handleLiveTranscription
+  });
 
   const addToast = useCallback((text: string, type: 'info' | 'error' | 'success' = 'info') => {
     const id = Date.now().toString();
@@ -162,6 +179,11 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices }) => 
       <main className="flex-1 relative flex overflow-hidden">
         <div className={`flex-1 transition-all duration-500 ease-in-out ${showSidebar ? 'mr-[380px]' : ''}`}>
            <ParticipantGrid participants={participants} />
+           
+           <CaptionOverlay 
+             caption={activeCaption} 
+             isVisible={isCaptionsActive} 
+           />
         </div>
 
         <Sidebar 
@@ -194,7 +216,7 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices }) => 
           addToast(isTranslateActive ? "Translation Stopped" : "Live Translation Active", "success");
         }}
         onOpenIntegrations={() => addToast("Integrations coming soon", "info")}
-        onOpenSettings={() => addToast("Settings Panel Opened", "info")}
+        onOpenSettings={() => setShowSettings(true)}
         onLeave={onLeave}
         onToggleSidebar={(tab) => {
           if (showSidebar && sidebarTab === tab) setShowSidebar(false);
@@ -205,6 +227,15 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices }) => 
         aiConnecting={aiConnecting}
         onToggleAi={() => aiActive ? stopAi() : startAi()}
         onTranscribe={handleTranscription}
+      />
+
+      <SettingsPage 
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        devices={currentDevices}
+        setDevices={setCurrentDevices}
+        role={ParticipantRole.HOST}
+        roomName={roomName}
       />
 
       <div className="absolute top-20 right-6 z-[60] flex flex-col gap-2">

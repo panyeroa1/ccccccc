@@ -3,7 +3,11 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { GoogleGenAI, Modality, LiveServerMessage } from '@google/genai';
 import { encodeBase64, decodeBase64, decodeAudioData } from '../services/geminiService';
 
-export function useGeminiLive() {
+interface UseGeminiLiveProps {
+  onTranscription?: (text: string, isUser: boolean) => void;
+}
+
+export function useGeminiLive({ onTranscription }: UseGeminiLiveProps = {}) {
   const [isActive, setIsActive] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const sessionRef = useRef<any>(null);
@@ -11,6 +15,10 @@ export function useGeminiLive() {
   const outputContextRef = useRef<AudioContext | null>(null);
   const nextStartTimeRef = useRef(0);
   const sourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
+  
+  // Buffers for accumulating transcription chunks
+  const currentInputText = useRef('');
+  const currentOutputText = useRef('');
 
   const stopSession = useCallback(() => {
     if (sessionRef.current) {
@@ -25,7 +33,8 @@ export function useGeminiLive() {
     setIsConnecting(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+      // Use the API key string directly when initializing the GoogleGenAI client instance
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       
       if (!audioContextRef.current) {
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
@@ -67,6 +76,23 @@ export function useGeminiLive() {
             scriptProcessor.connect(audioContextRef.current!.destination);
           },
           onmessage: async (message: LiveServerMessage) => {
+            // Fix: Property names on serverContent are inputTranscription and outputTranscription
+            if (message.serverContent?.inputTranscription) {
+              const chunk = message.serverContent.inputTranscription.text;
+              currentInputText.current += chunk;
+              onTranscription?.(currentInputText.current, true);
+            } else if (message.serverContent?.outputTranscription) {
+              const chunk = message.serverContent.outputTranscription.text;
+              currentOutputText.current += chunk;
+              onTranscription?.(currentOutputText.current, false);
+            }
+
+            if (message.serverContent?.turnComplete) {
+              currentInputText.current = '';
+              currentOutputText.current = '';
+            }
+
+            // Handle Audio Output
             const audioData = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
             if (audioData) {
               const ctx = outputContextRef.current!;
@@ -99,6 +125,8 @@ export function useGeminiLive() {
         },
         config: {
           responseModalities: [Modality.AUDIO],
+          inputAudioTranscription: {}, // Request user side transcription
+          outputAudioTranscription: {}, // Request AI side transcription
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Puck' } }
           },
@@ -112,7 +140,7 @@ export function useGeminiLive() {
       console.error('Failed to start Gemini Live:', err);
       setIsConnecting(false);
     }
-  }, [isActive, isConnecting, stopSession]);
+  }, [isActive, isConnecting, stopSession, onTranscription]);
 
   return { isActive, isConnecting, startSession, stopSession };
 }

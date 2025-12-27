@@ -3,7 +3,8 @@ import { GoogleGenAI, Modality, Type } from "@google/genai";
 
 // Ensure we only initialize when needed to get the latest environment key
 const getAiClient = () => {
-  return new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  // Use the API key string directly when initializing the GoogleGenAI client instance
+  return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
 /**
@@ -28,6 +29,7 @@ export async function transcribeAudio(base64Audio: string): Promise<string> {
         },
       ],
     });
+    // .text is a property, not a method
     return response.text || "Transcription failed";
   } catch (error) {
     console.error("Transcription error:", error);

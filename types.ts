@@ -47,3 +47,9 @@ export interface ToastMessage {
   text: string;
   type: 'info' | 'error' | 'success';
 }
+
+export interface LiveCaption {
+  text: string;
+  speakerName: string;
+  timestamp: number;
+}

@@ -29,7 +29,16 @@
 - Modified `ParticipantGrid.tsx` to detect screen-sharing participants.
 - Added a `Stage` view where the sharer takes the dominant area and others move to a monochromatic filmstrip.
 - Adjusted `ParticipantTile` to support `isStage` and `isMini` variants for better visual hierarchy.
+**Verification**: PASS.
+
+## Session ID: 20250525-030000
+**Start**: 2025-05-25 03:00:00
+**Objective**: Enhance Connection Quality indicators with muted semantic colors and animations.
+**Summary of Changes**:
+- Updated `ConnectionIndicator` in `ParticipantGrid.tsx` to use Orbit semantic colors (Muted Green, Yellow, Red).
+- Added `animate-pulse` for 'poor' connection quality to provide a clear visual warning.
+- Added a hover tooltip to the indicator showing the specific link status (e.g., LINK_POOR).
 **Verification**:
-- Verified that activating screen share instantly switches the grid to a Stage layout.
-- Verified that participants in the filmstrip are correctly styled in the Moonlit theme.
-- Verified responsiveness of the filmstrip (horizontal on mobile/vertical on desktop).
+- Verified colors appear correctly for good/fair/poor states in the simulation.
+- Verified pulse animation only triggers on 'poor' state.
+- Verified hovering over the bars reveals the link status label.

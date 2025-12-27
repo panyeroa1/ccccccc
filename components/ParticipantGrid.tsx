@@ -100,15 +100,27 @@ const ParticipantGrid: React.FC<ParticipantGridProps> = ({ participants }) => {
 
 const ConnectionIndicator: React.FC<{ quality?: ConnectionQuality }> = ({ quality = 'good' }) => {
   const bars = quality === 'poor' ? 1 : quality === 'fair' ? 2 : 4;
+  
+  // Muted colors for Orbit design system
+  const colorClass = 
+    quality === 'poor' ? 'bg-[#ff3b30]' : 
+    quality === 'fair' ? 'bg-[#ffcc00]' : 
+    'bg-[#34c759]';
+
   return (
-    <div className="flex items-end gap-[2px] h-3 px-2">
-      {[0, 1, 2, 3].map((i) => (
-        <div 
-          key={i}
-          className={`w-1 transition-all duration-500 ${i < bars ? 'bg-white shadow-[0_0_5px_rgba(255,255,255,0.5)]' : 'bg-neutral-900'}`}
-          style={{ height: `${(i + 1) * 25}%` }}
-        />
-      ))}
+    <div className="group relative flex items-center gap-2">
+      <div className="flex items-end gap-[2px] h-3 px-1">
+        {[0, 1, 2, 3].map((i) => (
+          <div 
+            key={i}
+            className={`w-1 transition-all duration-500 ${i < bars ? `${colorClass} ${quality === 'poor' ? 'animate-pulse' : ''}` : 'bg-neutral-800'}`}
+            style={{ height: `${(i + 1) * 25}%` }}
+          />
+        ))}
+      </div>
+      <span className="hidden group-hover:block absolute right-full mr-2 px-2 py-1 bg-black/90 border border-white/10 text-[8px] font-black uppercase tracking-widest whitespace-nowrap text-white">
+        LINK_{quality.toUpperCase()}
+      </span>
     </div>
   );
 };

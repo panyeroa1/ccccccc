@@ -6,6 +6,7 @@ import ControlDock from './ControlDock';
 import Sidebar from './Sidebar';
 import SettingsPage from './SettingsPage';
 import CaptionOverlay from './CaptionOverlay';
+import ScreenShareModal from './ScreenShareModal';
 import { useGeminiLive } from '../hooks/useGeminiLive';
 import { 
   fetchMessages, 
@@ -32,6 +33,7 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
   const [showSidebar, setShowSidebar] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('chat');
   const [showSettings, setShowSettings] = useState(false);
+  const [showScreenShareModal, setShowScreenShareModal] = useState(false);
   const [currentDevices, setCurrentDevices] = useState<DeviceSettings>(initialDevices);
   
   const passcode = useMemo(() => Math.floor(100000 + Math.random() * 900000).toString(), []);
@@ -141,6 +143,12 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
     sendMessageToSupabase(roomName, msg);
   };
 
+  const handleScreenShareConfirm = (withAudio: boolean, surface: string) => {
+    setIsSharingScreen(true);
+    setShowScreenShareModal(false);
+    addToast(`BROADCAST_ACTIVE: ${surface.toUpperCase()}`, "success");
+  };
+
   return (
     <div className="relative w-full h-full flex flex-col bg-black overflow-hidden font-sans">
       <header className="h-16 flex items-center justify-between px-10 bg-black/80 backdrop-blur-3xl z-20 absolute top-0 left-0 right-0 border-b border-white/5">
@@ -152,12 +160,12 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
             <div className="w-8 h-8 flex items-center justify-center">
               <img src="/images/logo-only.jpg" alt="Orbit" className="w-full h-full object-contain" />
             </div>
-            <span className="text-white text-base font-black tracking-tight uppercase">Orbit</span>
+            <span className="text-white text-base font-light tracking-widest uppercase">Orbit</span>
           </button>
           <div className="w-px h-6 bg-white/10" />
           <button 
             onClick={() => { setShowSidebar(true); setSidebarTab('info'); }}
-            className="text-neutral-500 hover:text-white transition-colors font-black text-[11px] tracking-[0.3em] uppercase"
+            className="text-neutral-500 hover:text-white transition-colors font-light text-[11px] tracking-[0.3em] uppercase"
           >
             {roomName}
           </button>
@@ -187,6 +195,7 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
           roomName={roomName}
           passcode={passcode}
           onCopyInvite={() => addToast("INVITE_COPIED", "success")}
+          localParticipantId={localParticipantId}
         />
       </main>
 
@@ -196,7 +205,7 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
         isVideoOff={isVideoOff}
         onToggleVideo={() => setIsVideoOff(!isVideoOff)}
         isSharingScreen={isSharingScreen}
-        onToggleScreenShare={() => {}}
+        onToggleScreenShare={() => isSharingScreen ? setIsSharingScreen(false) : setShowScreenShareModal(true)}
         isHandRaised={isHandRaised}
         onToggleHand={() => setIsHandRaised(!isHandRaised)}
         isCaptionsActive={isCaptionsActive}
@@ -205,7 +214,7 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
         onToggleTranslate={() => setIsTranslateActive(!isTranslateActive)}
         isRecording={isRecording}
         onToggleRecording={() => setIsRecording(!isRecording)}
-        onReaction={() => {}}
+        onReaction={(emoji) => addToast(`REACTION: ${emoji}`, "info")}
         onOpenIntegrations={() => {}}
         onOpenSettings={() => setShowSettings(true)}
         onLeave={onLeave}
@@ -229,9 +238,15 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
         roomName={roomName}
       />
 
+      <ScreenShareModal 
+        isOpen={showScreenShareModal}
+        onClose={() => setShowScreenShareModal(false)}
+        onConfirm={handleScreenShareConfirm}
+      />
+
       <div className="absolute top-24 right-10 z-[60] flex flex-col gap-3">
         {toasts.map(t => (
-          <div key={t.id} className="bg-black/90 border border-white/5 px-6 py-4 text-[10px] font-black uppercase tracking-[0.3em]">
+          <div key={t.id} className="bg-black/90 border border-white/5 px-6 py-4 text-[10px] font-normal uppercase tracking-[0.3em]">
              {t.text}
           </div>
         ))}

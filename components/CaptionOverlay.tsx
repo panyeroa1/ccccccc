@@ -34,11 +34,11 @@ const CaptionOverlay: React.FC<CaptionOverlayProps> = ({ caption, isVisible }) =
         style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)' }}
       >
         <div className="flex items-center gap-3 w-full">
-          <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest whitespace-nowrap border-r border-white/10 pr-3">
+          <span className="text-[10px] font-normal text-neutral-400 uppercase tracking-widest whitespace-nowrap border-r border-white/10 pr-3">
             {activeCaption.speakerName}
           </span>
           <div className="flex-1 overflow-hidden">
-            <p className="text-[12px] text-white tracking-tight truncate animate-streaming-text">
+            <p className="text-[12px] text-white tracking-normal truncate animate-streaming-text font-light">
               {activeCaption.text}
             </p>
           </div>

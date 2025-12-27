@@ -59,11 +59,11 @@ const ParticipantGrid: React.FC<ParticipantGridProps> = ({ participants, localPa
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[45] flex items-center animate-in slide-in-from-top-10 duration-700 pointer-events-none">
           <div className="flex items-center gap-4 bg-black/90 backdrop-blur-3xl px-6 py-2.5 border border-white/10 shadow-2xl">
             <div className="w-2 h-2 bg-white rounded-full animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
-            <span className="text-[10px] font-black text-white uppercase tracking-[0.4em]">
+            <span className="text-[10px] font-light text-white uppercase tracking-[0.4em]">
               Viewing {sharer.name}'s screen
             </span>
             <div className="w-px h-3 bg-white/20 mx-2" />
-            <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">
+            <span className="text-[9px] font-normal text-neutral-500 uppercase tracking-widest">
               Live Broadcast
             </span>
           </div>
@@ -114,7 +114,7 @@ const ConnectionIndicator: React.FC<{ quality?: ConnectionQuality }> = ({ qualit
   const bars = quality === 'poor' ? 1 : quality === 'fair' ? 2 : 4;
   const color = quality === 'poor' ? 'text-red-500' : quality === 'fair' ? 'text-yellow-500' : 'text-green-500';
   const bgColor = quality === 'poor' ? 'bg-red-500' : quality === 'fair' ? 'bg-yellow-500' : 'bg-green-500';
-  const shadowColor = quality === 'poor' ? 'shadow-[0_0_8px_rgba(239,68,68,0.6)]' : quality === 'fair' ? 'shadow-[0_0_8px_rgba(234,179,8,0.6)]' : 'shadow-[0_0_8px_rgba(34,197,94,0.6)]';
+  const shadowColor = quality === 'poor' ? 'shadow-[0_0_8px_rgba(239,68,68,0.4)]' : quality === 'fair' ? 'shadow-[0_0_8px_rgba(234,179,8,0.4)]' : 'shadow-[0_0_8px_rgba(34,197,94,0.4)]';
   const statusLabel = quality === 'poor' ? 'UNSTABLE' : quality === 'fair' ? 'DEGRADED' : 'STABLE';
 
   return (
@@ -130,7 +130,7 @@ const ConnectionIndicator: React.FC<{ quality?: ConnectionQuality }> = ({ qualit
             />
           ))}
         </div>
-        <span className={`text-[7px] font-black tracking-[0.2em] uppercase ${color} hidden group-hover:block transition-all`}>
+        <span className={`text-[7px] font-normal tracking-[0.2em] uppercase ${color} hidden group-hover:block transition-all`}>
           {statusLabel}
         </span>
       </div>
@@ -152,9 +152,9 @@ const ParticipantTile: React.FC<{
   const isHandRaised = participant.isHandRaised;
 
   const borderStyle = isSharing
-    ? 'border-[3px] border-white shadow-[0_0_50px_rgba(255,255,255,0.15)] z-[30]'
+    ? 'border-[2px] border-white/40 shadow-[0_0_50px_rgba(255,255,255,0.1)] z-[30]'
     : isCurrentlySpeaking 
-    ? 'border-2 border-blue-500/80 shadow-[0_0_40px_rgba(59,130,246,0.3)] z-10 scale-[0.995]' 
+    ? 'border-2 border-blue-500/40 shadow-[0_0_40px_rgba(59,130,246,0.2)] z-10 scale-[0.995]' 
     : 'border border-white/5';
 
   const avatarSize = isStage ? 'w-48 h-48 text-7xl' : isSolo ? 'w-64 h-64 text-9xl' : isMini ? 'w-12 h-12 text-xl' : 'w-24 h-24 text-4xl';
@@ -164,16 +164,16 @@ const ParticipantTile: React.FC<{
       
       {isCurrentlySpeaking && !isSharing && (
         <div className="absolute inset-0 pointer-events-none z-20">
-          <div className="absolute inset-0 border-[3px] border-blue-500/40 animate-orbit-speaking-pulse" />
-          <div className="absolute inset-0 border border-blue-400/20 animate-orbit-speaking-pulse-delayed" />
+          <div className="absolute inset-0 border-[3px] border-blue-500/20 animate-orbit-speaking-pulse" />
+          <div className="absolute inset-0 border border-blue-400/10 animate-orbit-speaking-pulse-delayed" />
         </div>
       )}
 
       {isSharing && !isMini && (
         <div className="absolute top-6 right-6 z-40 animate-in fade-in zoom-in duration-500">
-           <div className="flex items-center gap-3 bg-white px-3 py-1.5 shadow-[0_0_20px_rgba(255,255,255,0.4)]">
-              <svg className="w-3.5 h-3.5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-              <span className="text-[9px] font-black text-black uppercase tracking-[0.2em]">Live_Stream</span>
+           <div className="flex items-center gap-3 bg-white/10 backdrop-blur-xl px-3 py-1.5 border border-white/20">
+              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+              <span className="text-[9px] font-normal text-white uppercase tracking-[0.2em]">Live_Stream</span>
            </div>
         </div>
       )}
@@ -183,13 +183,13 @@ const ParticipantTile: React.FC<{
           <div className="w-full h-full bg-black flex flex-col items-center justify-center relative">
             <div className="absolute inset-0 pointer-events-none z-[5] bg-gradient-to-b from-white/[0.03] to-transparent h-1/2 animate-scanline" />
             <svg className={`text-white opacity-20 mb-4 transition-all duration-700 ${isStage ? 'w-40 h-40' : 'w-16 h-16'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-            {!isMini && <span className="text-white/20 text-[10px] font-black uppercase tracking-[0.6em]">Encrypted Data Uplink</span>}
+            {!isMini && <span className="text-white/20 text-[10px] font-light uppercase tracking-[0.6em]">Encrypted Data Uplink</span>}
           </div>
         ) : (participant.isVideoOff || participant.role === ParticipantRole.AI) ? (
           <div className="w-full h-full bg-black flex items-center justify-center">
-             <div className={`${avatarSize} bg-neutral-900 border border-white/5 flex items-center justify-center font-black transition-all duration-700 text-white shadow-inner`}>
+             <div className={`${avatarSize} bg-neutral-900 border border-white/5 flex items-center justify-center font-thin transition-all duration-700 text-white shadow-inner`}>
                 {participant.role === ParticipantRole.AI ? (
-                  <svg className="w-1/2 h-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                  <svg className="w-1/2 h-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                 ) : participant.name ? participant.name.charAt(0).toUpperCase() : '?'}
              </div>
           </div>
@@ -210,8 +210,8 @@ const ParticipantTile: React.FC<{
 
       <div className={`absolute left-6 right-6 flex items-center justify-between z-20 ${isMini ? 'bottom-2 px-1' : 'bottom-6'}`}>
         <div className={`flex items-center gap-3 bg-black/80 backdrop-blur-3xl px-4 py-2 border border-white/10 transition-all duration-500 ${isMini ? 'scale-75 origin-left px-2 py-1' : ''}`}>
-          <span className="text-white text-[11px] font-black uppercase tracking-[0.2em]">{participant.name || 'USER'} {isLocal ? '(YOU)' : ''}</span>
-          {isSharing && <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest">[SHARING]</span>}
+          <span className="text-white text-[11px] font-normal uppercase tracking-[0.2em]">{participant.name || 'USER'} {isLocal ? '(YOU)' : ''}</span>
+          {isSharing && <span className="text-[8px] font-light text-neutral-500 uppercase tracking-widest">[SHARING]</span>}
           {participant.isMuted && (
             <svg className="w-3.5 h-3.5 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
           )}

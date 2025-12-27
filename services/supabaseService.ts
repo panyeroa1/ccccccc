@@ -1,6 +1,6 @@
 
 import { createClient } from '@supabase/supabase-js';
-import { ChatMessage } from '../types';
+import { ChatMessage, Participant, ConnectionQuality, LiveCaption } from '../types';
 
 const SUPABASE_URL = 'https://rcbuikbjqgykssiatxpo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_uTIwEo4TJBo_YkX-OWN9qQ_5HJvl4c5';
@@ -8,8 +8,64 @@ const SUPABASE_KEY = 'sb_publishable_uTIwEo4TJBo_YkX-OWN9qQ_5HJvl4c5';
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 /**
- * Fetches the last 50 messages for a specific room.
+ * Enhanced error logger to prevent [object Object] logs by explicitly stringifying properties.
  */
+const logDbError = (context: string, error: any) => {
+  const message = error?.message || 'Unknown Error';
+  const code = error?.code || 'NO_CODE';
+  const details = error?.details || '';
+  const hint = error?.hint || '';
+
+  const fullReport = `[${code}] ${message} ${details} ${hint}`.trim();
+  
+  console.error(`DB_ERROR [${context}]: ${fullReport}`);
+  
+  if (error.code === '42P01') {
+    console.warn(`CRITICAL: Table for '${context}' does not exist in Supabase. Please ensure your schema is initialized.`);
+  }
+};
+
+/**
+ * CAPTION OPERATIONS (Single Row Per Room)
+ */
+
+export const upsertCaption = async (roomName: string, caption: LiveCaption) => {
+  const { error } = await supabase
+    .from('captions')
+    .upsert([{
+      room_id: roomName,
+      text: caption.text,
+      speaker_name: caption.speakerName,
+      timestamp: caption.timestamp
+    }], { onConflict: 'room_id' });
+
+  if (error) logDbError('upsertCaption', error);
+};
+
+export const subscribeToCaptions = (roomName: string, onUpdate: (caption: LiveCaption) => void) => {
+  return supabase
+    .channel(`captions:${roomName}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'captions', filter: `room_id=eq.${roomName}` },
+      (payload) => {
+        const c = payload.new;
+        if (c) {
+          onUpdate({
+            text: c.text,
+            speakerName: c.speaker_name,
+            timestamp: c.timestamp
+          });
+        }
+      }
+    )
+    .subscribe();
+};
+
+/**
+ * MESSAGES TABLE OPERATIONS
+ */
+
 export const fetchMessages = async (roomName: string): Promise<ChatMessage[]> => {
   const { data, error } = await supabase
     .from('messages')
@@ -19,7 +75,7 @@ export const fetchMessages = async (roomName: string): Promise<ChatMessage[]> =>
     .limit(50);
 
   if (error) {
-    console.error('Error fetching messages:', error);
+    logDbError('fetchMessages', error);
     return [];
   }
 
@@ -33,9 +89,6 @@ export const fetchMessages = async (roomName: string): Promise<ChatMessage[]> =>
   }));
 };
 
-/**
- * Sends a message to the Supabase backend.
- */
 export const sendMessageToSupabase = async (roomName: string, message: ChatMessage) => {
   const { error } = await supabase
     .from('messages')
@@ -49,25 +102,15 @@ export const sendMessageToSupabase = async (roomName: string, message: ChatMessa
       is_ai: message.isAi || false
     }]);
 
-  if (error) {
-    console.error('Error sending message:', error);
-  }
+  if (error) logDbError('sendMessageToSupabase', error);
 };
 
-/**
- * Subscribes to new messages in real-time.
- */
 export const subscribeToMessages = (roomName: string, onMessage: (msg: ChatMessage) => void) => {
   return supabase
-    .channel(`room:${roomName}`)
+    .channel(`messages:${roomName}`)
     .on(
       'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `room_id=eq.${roomName}`,
-      },
+      { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${roomName}` },
       (payload) => {
         const m = payload.new;
         onMessage({
@@ -79,6 +122,66 @@ export const subscribeToMessages = (roomName: string, onMessage: (msg: ChatMessa
           isAi: m.is_ai
         });
       }
+    )
+    .subscribe();
+};
+
+/**
+ * PARTICIPANTS TABLE OPERATIONS
+ */
+
+export const syncParticipant = async (roomName: string, p: Participant) => {
+  const { error } = await supabase
+    .from('participants')
+    .upsert([{
+      id: p.id,
+      room_id: roomName,
+      name: p.name,
+      role: p.role,
+      is_muted: p.isMuted,
+      is_video_off: p.isVideoOff,
+      is_sharing_screen: p.isSharingScreen,
+      is_hand_raised: p.isHandRaised || false,
+      connection: p.connection || 'good',
+      last_seen: Date.now()
+    }], { onConflict: 'id' });
+
+  if (error) logDbError('syncParticipant', error);
+};
+
+export const fetchParticipants = async (roomName: string): Promise<Participant[]> => {
+  const cutoff = Date.now() - 60000;
+  const { data, error } = await supabase
+    .from('participants')
+    .select('*')
+    .eq('room_id', roomName)
+    .gt('last_seen', cutoff);
+
+  if (error) {
+    logDbError('fetchParticipants', error);
+    return [];
+  }
+
+  return data.map(p => ({
+    id: p.id,
+    name: p.name,
+    role: p.role as any,
+    isMuted: p.is_muted,
+    isVideoOff: p.is_video_off,
+    isSharingScreen: p.is_sharing_screen,
+    isSpeaking: false,
+    isHandRaised: p.is_hand_raised,
+    connection: p.connection as ConnectionQuality
+  }));
+};
+
+export const subscribeToParticipants = (roomName: string, onUpdate: () => void) => {
+  return supabase
+    .channel(`participants:${roomName}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'participants', filter: `room_id=eq.${roomName}` },
+      () => onUpdate()
     )
     .subscribe();
 };

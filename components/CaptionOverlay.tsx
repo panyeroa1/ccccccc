@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { LiveCaption } from '../types';
 
 interface CaptionOverlayProps {
@@ -9,34 +9,51 @@ interface CaptionOverlayProps {
 
 const CaptionOverlay: React.FC<CaptionOverlayProps> = ({ caption, isVisible }) => {
   const [activeCaption, setActiveCaption] = useState<LiveCaption | null>(null);
-  const [fade, setFade] = useState(false);
+  const [show, setShow] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (caption) {
+    if (caption && caption.text.trim().length > 0) {
       setActiveCaption(caption);
-      setFade(true);
+      setShow(true);
       
-      // Auto-clear caption after 4 seconds of no update
-      const timer = setTimeout(() => {
-        setFade(false);
-      }, 4000);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
       
-      return () => clearTimeout(timer);
+      timeoutRef.current = setTimeout(() => {
+        setShow(false);
+      }, 5000);
     }
   }, [caption]);
 
-  if (!isVisible || !activeCaption || !fade) return null;
+  if (!isVisible || !activeCaption || !show) return null;
 
   return (
-    <div className="absolute bottom-32 left-1/2 -translate-x-1/2 z-40 max-w-[80%] pointer-events-none animate-in fade-in slide-in-from-bottom-4 duration-300">
-      <div className="bg-black/90 backdrop-blur-3xl px-8 py-4 rounded-none border border-white/10 shadow-2xl flex flex-col items-center text-center">
-        <span className="text-neutral-400 text-[9px] font-black uppercase tracking-[0.4em] mb-2">
-          {activeCaption.speakerName}
-        </span>
-        <p className="text-white text-xl md:text-2xl font-black tracking-tighter leading-tight uppercase">
-          {activeCaption.text}
-        </p>
+    <div className="absolute bottom-24 left-0 right-0 flex justify-center z-[100] pointer-events-none px-10">
+      <div 
+        className="w-full max-w-5xl h-10 flex items-center px-6 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-500 font-roboto"
+        style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)' }}
+      >
+        <div className="flex items-center gap-3 w-full">
+          <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest whitespace-nowrap border-r border-white/10 pr-3">
+            {activeCaption.speakerName}
+          </span>
+          <div className="flex-1 overflow-hidden">
+            <p className="text-[12px] text-white tracking-tight truncate animate-streaming-text">
+              {activeCaption.text}
+            </p>
+          </div>
+        </div>
       </div>
+      
+      <style>{`
+        @keyframes streaming-text {
+          0% { transform: translateX(10px); opacity: 0; }
+          100% { transform: translateX(0); opacity: 1; }
+        }
+        .animate-streaming-text {
+          animation: streaming-text 0.3s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 };

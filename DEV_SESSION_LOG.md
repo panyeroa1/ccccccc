@@ -1,19 +1,23 @@
 
 # Orbit RTC Development Log
 
-## Session ID: 20250525-110000
-**Start**: 2025-05-25 11:00:00
-**Objective**: Connect Orbit RTC to Supabase backend for persistent chat.
+## Session ID: 20250525-123000
+**Start**: 2025-05-25 12:30:00
+**Objective**: Implement real-time auto-captions with Supabase persistence and specific UI styling (12px Roboto, 45% bg).
 **Summary of Changes**:
-- Added `@supabase/supabase-js` to `index.html`.
-- Created `services/supabaseService.ts` to encapsulate backend logic.
-- Updated `Room.tsx` to:
-  - Fetch initial chat history from Supabase on load.
-  - Subscribe to real-time `INSERT` events on the `messages` table.
-  - Sync outgoing messages to the database.
+- **Typography**: Added Google Fonts link for Roboto in `index.html`.
+- **Database**: 
+  - Created `captions` table integration in `supabaseService.ts`.
+  - Implemented `upsertCaption` for single-row auto-updating per room.
+  - Added real-time subscription for captions.
+- **AI Integration**: Updated `Room.tsx` to push Gemini Live transcriptions to Supabase.
+- **UI**: Overhauled `CaptionOverlay.tsx`:
+  - Fixed 12px Roboto font size.
+  - Applied 45% background opacity (rgba(0,0,0,0.45)).
+  - Implemented one-liner horizontal layout with entry animation.
 **Verification**:
-- Verified Supabase client initialization.
-- Confirmed real-time subscriptions trigger UI updates across multiple browser instances.
-- Ensured optimistic updates in the UI for a snappy experience while messages persist in the background.
-**Assumptions**:
-- Assumes a `messages` table exists in the public schema with columns: `id`, `room_id`, `sender_id`, `sender_name`, `text`, `timestamp`, `is_ai`.
+- Transcriptions from Gemini Live now trigger a database update.
+- All participants in the same room see the current speaker's text in the bottom bar.
+- Layout remains fixed to a single line as per requirements.
+**Infrastructure Note**:
+- Ensure a `captions` table exists in Supabase: `room_id (text, PK)`, `text (text)`, `speaker_name (text)`, `timestamp (bigint)`.

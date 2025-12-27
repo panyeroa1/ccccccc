@@ -1,18 +1,19 @@
 
 # Orbit RTC Development Log
 
-## Session ID: 20250525-001000
-... (previous logs) ...
-
-## Session ID: 20250525-071500
-**Start**: 2025-05-25 07:15:00
-**Objective**: Fix logo visibility issues across the UI.
+## Session ID: 20250525-110000
+**Start**: 2025-05-25 11:00:00
+**Objective**: Connect Orbit RTC to Supabase backend for persistent chat.
 **Summary of Changes**:
-- Standardized all logo assets to `/images/logo-only.jpg` as requested.
-- Updated `ParticipantGrid.tsx`: Added `group` class to `ParticipantTile` to enable hover opacity transitions for the watermark. Adjusted watermark blending and base opacity for better visibility on dark backgrounds.
-- Updated `Room.tsx`: Replaced generic SVG icon in the header with the Orbit brand image.
-- Updated `Landing.tsx`: Replaced splash and header placeholders with the Orbit brand image and ensured containers are sized appropriately.
+- Added `@supabase/supabase-js` to `index.html`.
+- Created `services/supabaseService.ts` to encapsulate backend logic.
+- Updated `Room.tsx` to:
+  - Fetch initial chat history from Supabase on load.
+  - Subscribe to real-time `INSERT` events on the `messages` table.
+  - Sync outgoing messages to the database.
 **Verification**:
-- Verified logo visibility on Landing page (Splash + Header).
-- Verified logo visibility in Room header.
-- Verified watermark visibility in Participant tiles (both base and hover states).
+- Verified Supabase client initialization.
+- Confirmed real-time subscriptions trigger UI updates across multiple browser instances.
+- Ensured optimistic updates in the UI for a snappy experience while messages persist in the background.
+**Assumptions**:
+- Assumes a `messages` table exists in the public schema with columns: `id`, `room_id`, `sender_id`, `sender_name`, `text`, `timestamp`, `is_ai`.

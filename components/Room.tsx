@@ -9,6 +9,7 @@ import CaptionOverlay from './CaptionOverlay';
 import ScreenShareModal, { DisplaySurface } from './ScreenShareModal';
 import { useGeminiLive } from '../hooks/useGeminiLive';
 import { transcribeAudio } from '../services/geminiService';
+import { fetchMessages, sendMessageToSupabase, subscribeToMessages } from '../services/supabaseService';
 
 interface RoomProps {
   userName: string;
@@ -26,7 +27,6 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
   const [showSettings, setShowSettings] = useState(false);
   const [currentDevices, setCurrentDevices] = useState<DeviceSettings>(initialDevices);
   
-  // Generate a random passcode once per session
   const passcode = useMemo(() => Math.floor(100000 + Math.random() * 900000).toString(), []);
 
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -40,6 +40,27 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
   const [isCaptionsActive, setIsCaptionsActive] = useState(false);
   const [isTranslateActive, setIsTranslateActive] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+
+  // Persistence Logic: Fetch initial messages and subscribe
+  useEffect(() => {
+    const initPersistence = async () => {
+      const initialMsgs = await fetchMessages(roomName);
+      setMessages(initialMsgs);
+    };
+    initPersistence();
+
+    const subscription = subscribeToMessages(roomName, (newMsg) => {
+      setMessages(prev => {
+        // Prevent duplicate messages if the local user just sent one
+        if (prev.some(m => m.id === newMsg.id)) return prev;
+        return [...prev, newMsg];
+      });
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [roomName]);
 
   const handleLiveTranscription = useCallback((text: string, isUser: boolean) => {
     setActiveCaption({
@@ -157,23 +178,18 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
     }
   };
 
-  useEffect(() => {
-    return () => {
-      if (screenStreamRef.current) {
-        screenStreamRef.current.getTracks().forEach(t => t.stop());
-      }
-    };
-  }, []);
-
   const handleSendMessage = (text: string) => {
     const msg: ChatMessage = {
-      id: Date.now().toString(),
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       senderId: 'local-user',
       senderName: userName,
       text,
       timestamp: Date.now()
     };
+    // Optimistic update
     setMessages(prev => [...prev, msg]);
+    // Persist to Supabase
+    sendMessageToSupabase(roomName, msg);
   };
 
   const handleTranscription = async (audioBlob: Blob) => {

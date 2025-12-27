@@ -17,6 +17,7 @@
 - [x] **Live Captions**: Monochromatic high-contrast text overlays.
 - [x] **Sidebar**: Broad comms and roster panels.
 - [x] **Settings**: Professional-grade hardware and security config.
+- [x] **Connection Quality UI**: Enhanced visual indicators (Green/Yellow/Red) with pulsing orbs and branding.
 
 ## Pending Features
 - [ ] **Real SFU Backend Integration**.

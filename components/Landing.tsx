@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface LandingProps {
   onStart: (userName: string, roomName: string) => void;
@@ -7,75 +7,97 @@ interface LandingProps {
 
 const Landing: React.FC<LandingProps> = ({ onStart }) => {
   const [room, setRoom] = useState('');
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (room) {
-      // Pass empty string for name; it will be collected in the Lobby
       onStart('', room.replace('orbit.ai/', ''));
     }
   };
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center bg-[#0a0a0a] overflow-hidden px-6 font-sans">
-      <header className="absolute top-0 left-0 right-0 p-8 flex justify-between items-center z-10">
-        <div className="flex items-center gap-2 group cursor-pointer">
-          <div className="w-8 h-8 rounded-sm bg-blue-600 flex items-center justify-center shadow-[0_0_15px_rgba(37,99,235,0.4)]">
-            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-          </div>
-          <span className="text-xl font-bold tracking-tight text-white uppercase">Orbit</span>
+    <div className="relative w-full h-full flex flex-col items-center justify-center bg-black overflow-hidden font-sans">
+      {/* Splash Screen Overlay */}
+      <div className={`fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center transition-opacity duration-1000 ease-in-out ${showSplash ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+        <div className="relative w-64 h-64 mb-12">
+           <img 
+             src="/images/logo.png" 
+             alt="Orbit Logo" 
+             className="w-full h-full object-contain animate-in zoom-in-50 fade-in duration-1000"
+           />
+           <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent h-1/4 bottom-0 pointer-events-none" />
         </div>
-      </header>
-
-      <div className="max-w-xl w-full text-center space-y-8 relative z-10">
-        <div className="space-y-4">
-          <h1 className="text-5xl md:text-6xl font-bold tracking-tighter text-white">Start a meeting.</h1>
-          <p className="text-lg text-neutral-500 font-medium">Free, high-quality video calls. No account required.</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4 max-w-sm mx-auto">
-          <div className="relative group">
-            <input
-              type="text"
-              value={room}
-              onChange={(e) => setRoom(e.target.value)}
-              className="w-full px-5 py-4 bg-[#111] border border-white/10 rounded-lg text-white placeholder-neutral-700 focus:border-blue-500 outline-none transition-all text-sm font-medium pr-12"
-              placeholder="Enter room name"
-              required
-              autoFocus
-            />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-700 group-focus-within:text-blue-500 transition-colors">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
-            </div>
+        <div className="flex flex-col items-center gap-4">
+          <h2 className="text-2xl font-black text-white uppercase tracking-[1em] ml-[1em] animate-pulse">Orbit</h2>
+          <div className="h-0.5 w-12 bg-white/20 relative overflow-hidden">
+            <div className="absolute inset-0 bg-white animate-orbit-loading" />
           </div>
-          <button
-            type="submit"
-            disabled={!room}
-            className="w-full py-4 bg-blue-600 hover:bg-blue-500 disabled:bg-neutral-800 disabled:text-neutral-600 text-white font-bold rounded-lg transition-all shadow-xl shadow-blue-600/10 active:scale-[0.98]"
-          >
-            Go
-          </button>
-        </form>
-
-        <div className="flex justify-center gap-12 pt-12 opacity-40">
-           <div className="flex flex-col items-center gap-2">
-              <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center">
-                 <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-              </div>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Encrypted</span>
-           </div>
-           <div className="flex flex-col items-center gap-2">
-              <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center">
-                 <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-              </div>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">No Installs</span>
-           </div>
         </div>
       </div>
 
-      <footer className="absolute bottom-8 text-[10px] font-bold uppercase tracking-widest text-neutral-700">
-        Orbit RTC v2.5.0 • Powered by WebRTC
+      <header className="absolute top-0 left-0 right-0 p-10 flex justify-between items-center z-10">
+        <div className="flex items-center gap-3 group cursor-pointer">
+          <div className="w-10 h-10 rounded-none bg-white flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.2)]">
+            <svg className="w-6 h-6 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+          </div>
+          <span className="text-2xl font-black tracking-tighter text-white uppercase">Orbit</span>
+        </div>
+      </header>
+
+      <div className="w-full h-full flex items-center justify-center relative z-10 px-6">
+        <div className="max-w-4xl w-full flex flex-col items-center text-center space-y-12">
+          <div className="space-y-6">
+            <h1 className="text-7xl md:text-9xl font-black tracking-tighter text-white uppercase leading-[0.8] animate-in fade-in zoom-in-95 duration-700">Connect in the void.</h1>
+            <p className="text-xl text-neutral-500 font-bold uppercase tracking-[0.3em]">Pure communication • No limits</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="w-full max-w-2xl space-y-6">
+            <div className="relative group">
+              <input
+                type="text"
+                value={room}
+                onChange={(e) => setRoom(e.target.value)}
+                className="w-full px-8 py-8 bg-transparent border-b-2 border-white/10 text-white placeholder-neutral-800 focus:border-white outline-none transition-all text-4xl font-black tracking-tighter uppercase"
+                placeholder="ROOM_NAME"
+                required
+                autoFocus
+              />
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 text-neutral-800 group-focus-within:text-white transition-colors">
+                <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+              </div>
+            </div>
+            <button
+              type="submit"
+              disabled={!room}
+              className="w-full py-6 bg-white hover:bg-neutral-200 disabled:bg-neutral-900 disabled:text-neutral-700 text-black text-xs font-black uppercase tracking-[0.5em] transition-all active:scale-[0.98] shadow-[0_0_40px_rgba(255,255,255,0.1)]"
+            >
+              Initialize Session
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <footer className="absolute bottom-10 w-full px-10 flex justify-between text-[10px] font-black uppercase tracking-[0.4em] text-neutral-700">
+        <span>Orbit RTC v2.6.0</span>
+        <span>Void-Grade Encryption</span>
       </footer>
+
+      <style>{`
+        @keyframes orbit-loading {
+          0% { left: -100%; width: 0%; }
+          50% { left: 0%; width: 100%; }
+          100% { left: 100%; width: 0%; }
+        }
+        .animate-orbit-loading { animation: orbit-loading 2s ease-in-out infinite; }
+      `}</style>
     </div>
   );
 };

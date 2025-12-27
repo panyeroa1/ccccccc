@@ -29,11 +29,11 @@ const CaptionOverlay: React.FC<CaptionOverlayProps> = ({ caption, isVisible }) =
 
   return (
     <div className="absolute bottom-32 left-1/2 -translate-x-1/2 z-40 max-w-[80%] pointer-events-none animate-in fade-in slide-in-from-bottom-4 duration-300">
-      <div className="bg-black/85 backdrop-blur-md px-6 py-3 rounded-sm border border-white/5 shadow-2xl flex flex-col items-center text-center">
-        <span className="text-blue-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1 opacity-80">
+      <div className="bg-black/90 backdrop-blur-3xl px-8 py-4 rounded-none border border-white/10 shadow-2xl flex flex-col items-center text-center">
+        <span className="text-neutral-400 text-[9px] font-black uppercase tracking-[0.4em] mb-2">
           {activeCaption.speakerName}
         </span>
-        <p className="text-white text-lg md:text-xl font-medium tracking-tight leading-relaxed">
+        <p className="text-white text-xl md:text-2xl font-black tracking-tighter leading-tight uppercase">
           {activeCaption.text}
         </p>
       </div>

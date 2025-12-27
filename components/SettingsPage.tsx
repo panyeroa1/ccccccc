@@ -17,7 +17,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, devices, s
   const [activeTab, setActiveTab] = useState<SettingsTab>('devices');
   const [availableDevices, setAvailableDevices] = useState<MediaDeviceInfo[]>([]);
   
-  // Interactive UI States
   const [videoQuality, setVideoQuality] = useState('720p');
   const [bgBlur, setBgBlur] = useState(false);
   const [lobbyEnabled, setLobbyEnabled] = useState(true);
@@ -42,193 +41,86 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, devices, s
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[110] flex bg-[#080808] animate-in fade-in slide-in-from-right-10 duration-500">
-      {/* Sidebar Navigation */}
-      <div className="w-80 bg-[#0a0a0a] border-r border-white/5 flex flex-col p-8">
-        <div className="flex items-center gap-4 mb-16 px-2">
-          <div className="w-10 h-10 rounded-sm bg-blue-600 flex items-center justify-center shadow-[0_0_20px_rgba(37,99,235,0.3)]">
-            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /></svg>
+    <div className="fixed inset-0 z-[110] flex bg-black animate-in slide-in-from-right-full duration-700 font-sans">
+      <div className="w-96 bg-neutral-950 border-r border-white/5 flex flex-col p-12">
+        <div className="flex items-center gap-6 mb-20">
+          <div className="w-12 h-12 bg-white flex items-center justify-center">
+            <svg className="w-7 h-7 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /></svg>
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-black uppercase tracking-[0.2em] text-white">Orbit Settings</span>
-            <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">{roomName}</span>
+            <span className="text-base font-black uppercase tracking-[0.3em] text-white leading-none">Settings</span>
+            <span className="text-[9px] text-neutral-700 font-black uppercase tracking-[0.4em] mt-2">{roomName}</span>
           </div>
         </div>
 
-        <nav className="flex-1 space-y-2">
-          <TabButton active={activeTab === 'devices'} onClick={() => setActiveTab('devices')} label="Input & Output" icon={<DeviceIcon />} />
-          <TabButton active={activeTab === 'video'} onClick={() => setActiveTab('video')} label="Video Quality" icon={<VideoIcon />} />
-          <TabButton active={activeTab === 'audio'} onClick={() => setActiveTab('audio')} label="Audio Processing" icon={<AudioIcon />} />
-          <TabButton active={activeTab === 'security'} onClick={() => setActiveTab('security')} label="Security Controls" icon={<SecurityIcon />} />
-          <TabButton active={activeTab === 'shortcuts'} onClick={() => setActiveTab('shortcuts')} label="Key Bindings" icon={<ShortcutIcon />} />
+        <nav className="flex-1 space-y-4">
+          <TabButton active={activeTab === 'devices'} onClick={() => setActiveTab('devices')} label="Peripherals" icon={<DeviceIcon />} />
+          <TabButton active={activeTab === 'video'} onClick={() => setActiveTab('video')} label="Optics" icon={<VideoIcon />} />
+          <TabButton active={activeTab === 'audio'} onClick={() => setActiveTab('audio')} label="Filters" icon={<AudioIcon />} />
+          <TabButton active={activeTab === 'security'} onClick={() => setActiveTab('security')} label="Privacy" icon={<SecurityIcon />} />
+          <TabButton active={activeTab === 'shortcuts'} onClick={() => setActiveTab('shortcuts')} label="Binding" icon={<ShortcutIcon />} />
         </nav>
 
         <button 
           onClick={onClose}
-          className="mt-auto flex items-center gap-4 px-6 py-4 bg-white/5 hover:bg-white/10 rounded-sm text-neutral-400 hover:text-white transition-all group border border-white/5"
+          className="mt-auto flex items-center justify-between p-6 bg-white text-black font-black uppercase tracking-[0.4em] text-[10px] active:scale-95 transition-all"
         >
-          <svg className="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-          <span className="text-xs font-black uppercase tracking-[0.15em]">Return to Call</span>
+          <span>Return</span>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
         </button>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto bg-[#080808]">
-        <div className="max-w-4xl mx-auto py-24 px-12">
+      <div className="flex-1 overflow-y-auto bg-black p-24">
+        <div className="max-w-5xl mx-auto">
           {activeTab === 'devices' && (
-            <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <Section title="Hardware Configuration" subtitle="Configure your cameras, microphones, and audio outputs for the current session.">
-                <div className="grid grid-cols-1 gap-10">
-                  <DeviceSelector 
-                    label="Camera Source" 
-                    value={devices.videoInputId} 
-                    options={availableDevices.filter(d => d.kind === 'videoinput')}
-                    onChange={(val) => setDevices({...devices, videoInputId: val})}
-                    description="The camera currently being used to broadcast your video feed."
-                  />
-                  <DeviceSelector 
-                    label="Microphone Input" 
-                    value={devices.audioInputId} 
-                    options={availableDevices.filter(d => d.kind === 'audioinput')}
-                    onChange={(val) => setDevices({...devices, audioInputId: val})}
-                    description="Primary audio source. Use an external mic for best quality."
-                  />
-                  <DeviceSelector 
-                    label="Audio Output" 
-                    value={devices.audioOutputId} 
-                    options={availableDevices.filter(d => d.kind === 'audiooutput')}
-                    onChange={(val) => setDevices({...devices, audioOutputId: val})}
-                    description="Select which device plays back participant audio."
-                  />
-                </div>
-              </Section>
-            </div>
+            <Section title="Peripheral Config" subtitle="Initialize hardware interfaces for the current session.">
+              <div className="grid grid-cols-1 gap-12">
+                <DeviceSelector label="Optic_Stream" value={devices.videoInputId} options={availableDevices.filter(d => d.kind === 'videoinput')} onChange={(val) => setDevices({...devices, videoInputId: val})} />
+                <DeviceSelector label="Audio_Uplink" value={devices.audioInputId} options={availableDevices.filter(d => d.kind === 'audioinput')} onChange={(val) => setDevices({...devices, audioInputId: val})} />
+                <DeviceSelector label="Audio_Downlink" value={devices.audioOutputId} options={availableDevices.filter(d => d.kind === 'audiooutput')} onChange={(val) => setDevices({...devices, audioOutputId: val})} />
+              </div>
+            </Section>
           )}
 
           {activeTab === 'video' && (
-            <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <Section title="Video Resolution" subtitle="Manage your data usage and broadcast clarity.">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <QualityOption 
-                      label="High Definition (720p)" 
-                      description="Standard clarity for professional meetings." 
-                      active={videoQuality === '720p'} 
-                      onClick={() => setVideoQuality('720p')}
-                    />
-                    <QualityOption 
-                      label="Standard (360p)" 
-                      description="Recommended for slower internet connections." 
-                      active={videoQuality === '360p'} 
-                      onClick={() => setVideoQuality('360p')}
-                    />
-                    <QualityOption 
-                      label="Audio Only" 
-                      description="Disable all outgoing video to save maximum bandwidth." 
-                      active={videoQuality === 'audio-only'} 
-                      onClick={() => setVideoQuality('audio-only')}
-                    />
-                    <QualityOption 
-                      label="Adaptive Auto" 
-                      description="Orbit will dynamically adjust quality based on jitter." 
-                      active={videoQuality === 'auto'} 
-                      onClick={() => setVideoQuality('auto')}
-                    />
-                 </div>
-                 
-                 <div className="pt-8 border-t border-white/5">
-                    <SecurityToggle 
-                      label="Background Blur" 
-                      description="Use on-device AI to obscure your physical environment." 
-                      active={bgBlur} 
-                      onChange={() => setBgBlur(!bgBlur)}
-                      disabled={false}
-                    />
-                 </div>
-              </Section>
-            </div>
+            <Section title="Optic Res" subtitle="Scale resolution to balance bandwidth against clarity.">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <QualityOption label="720p_HIGH" active={videoQuality === '720p'} onClick={() => setVideoQuality('720p')} />
+                  <QualityOption label="360p_LOW" active={videoQuality === '360p'} onClick={() => setVideoQuality('360p')} />
+                  <QualityOption label="NULL_VIDEO" active={videoQuality === 'audio-only'} onClick={() => setVideoQuality('audio-only')} />
+                  <QualityOption label="ADAPTIVE" active={videoQuality === 'auto'} onClick={() => setVideoQuality('auto')} />
+               </div>
+            </Section>
           )}
 
           {activeTab === 'audio' && (
-            <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <Section title="Audio Processing" subtitle="Advanced signal filtering for crystal clear communication.">
-                 <div className="space-y-4">
-                    <SecurityToggle 
-                      label="Noise Suppression" 
-                      description="Filters out background hums, fans, and key clicks." 
-                      active={noiseSuppression} 
-                      onChange={() => setNoiseSuppression(!noiseSuppression)}
-                      disabled={false}
-                    />
-                    <SecurityToggle 
-                      label="Acoustic Echo Cancellation" 
-                      description="Prevents feedback when using speakers without headphones." 
-                      active={echoCancellation} 
-                      onChange={() => setEchoCancellation(!echoCancellation)}
-                      disabled={false}
-                    />
-                    <SecurityToggle 
-                      label="Auto Gain Control" 
-                      description="Normalizes your volume levels automatically." 
-                      active={autoGain} 
-                      onChange={() => setAutoGain(!autoGain)}
-                      disabled={false}
-                    />
-                 </div>
-              </Section>
-            </div>
+            <Section title="Processing" subtitle="Signal conditioning for optimal audio fidelity.">
+               <div className="space-y-6">
+                  <SecurityToggle label="NOISE_SUPPRESSION" active={noiseSuppression} onChange={() => setNoiseSuppression(!noiseSuppression)} disabled={false} />
+                  <SecurityToggle label="ECHO_CANCELLATION" active={echoCancellation} onChange={() => setEchoCancellation(!echoCancellation)} disabled={false} />
+                  <SecurityToggle label="AUTO_GAIN" active={autoGain} onChange={() => setAutoGain(!autoGain)} disabled={false} />
+               </div>
+            </Section>
           )}
 
           {activeTab === 'security' && (
-            <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <Section title="Meeting Security" subtitle="Administrative controls to maintain order and privacy.">
-                 <div className="space-y-4">
-                    <SecurityToggle 
-                      label="Enable Lobby" 
-                      description="Require manual host approval for every new participant." 
-                      active={lobbyEnabled} 
-                      onChange={() => setLobbyEnabled(!lobbyEnabled)}
-                      disabled={role !== ParticipantRole.HOST} 
-                    />
-                    <SecurityToggle 
-                      label="Lock Meeting Room" 
-                      description="Immediately prevent any new connection attempts." 
-                      active={lockMeeting} 
-                      onChange={() => setLockMeeting(!lockMeeting)}
-                      disabled={role !== ParticipantRole.HOST} 
-                    />
-                    <SecurityToggle 
-                      label="Allow Screen Sharing" 
-                      description="When disabled, only moderators can broadcast their screen." 
-                      active={screenShareAllowed} 
-                      onChange={() => setScreenShareAllowed(!screenShareAllowed)}
-                      disabled={role !== ParticipantRole.HOST} 
-                    />
-                 </div>
-                 {role !== ParticipantRole.HOST && (
-                   <div className="p-5 bg-yellow-500/5 border border-yellow-500/10 rounded-sm">
-                      <p className="text-xs text-yellow-500/80 font-bold uppercase tracking-widest leading-relaxed">
-                        Notice: You are currently a Participant. These settings can only be modified by the Meeting Host.
-                      </p>
-                   </div>
-                 )}
-              </Section>
-            </div>
+            <Section title="Session Security" subtitle="Enforce privacy protocols for all participants.">
+               <div className="space-y-6">
+                  <SecurityToggle label="LOBBY_INTERCEPT" active={lobbyEnabled} onChange={() => setLobbyEnabled(!lobbyEnabled)} disabled={role !== ParticipantRole.HOST} />
+                  <SecurityToggle label="LOCK_SESSION" active={lockMeeting} onChange={() => setLockMeeting(!lockMeeting)} disabled={role !== ParticipantRole.HOST} />
+               </div>
+            </Section>
           )}
 
           {activeTab === 'shortcuts' && (
-            <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <Section title="Key Bindings" subtitle="Keyboard shortcuts for power users.">
-                <div className="bg-[#111] border border-white/5 rounded-sm overflow-hidden">
-                  <ShortcutItem keys={["M"]} action="Mute / Unmute Microphone" />
-                  <ShortcutItem keys={["V"]} action="Enable / Disable Camera" />
-                  <ShortcutItem keys={["C"]} action="Open / Close Chat Sidebar" />
-                  <ShortcutItem keys={["P"]} action="Toggle Participants List" />
-                  <ShortcutItem keys={["S"]} action="Start / Stop Screen Sharing" />
-                  <ShortcutItem keys={["R"]} action="Raise / Lower Hand" />
-                  <ShortcutItem keys={["Esc"]} action="Close Current Overlay" />
-                </div>
-              </Section>
-            </div>
+            <Section title="Interface Bindings" subtitle="Quick execution commands for system functions.">
+              <div className="bg-neutral-950 border border-white/5 p-8">
+                <ShortcutItem keys={["M"]} action="Audio_Mute" />
+                <ShortcutItem keys={["V"]} action="Optic_Disable" />
+                <ShortcutItem keys={["C"]} action="Sidebar_Comms" />
+                <ShortcutItem keys={["Esc"]} action="Abort_Overlay" />
+              </div>
+            </Section>
           )}
         </div>
       </div>
@@ -236,97 +128,72 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, devices, s
   );
 };
 
-// Sub-components
 const Section: React.FC<{ title: string; subtitle: string; children: React.ReactNode }> = ({ title, subtitle, children }) => (
-  <div className="space-y-8">
-    <div className="max-w-2xl">
-      <h3 className="text-4xl font-bold text-white tracking-tighter mb-2">{title}</h3>
-      <p className="text-neutral-500 text-base font-medium leading-relaxed">{subtitle}</p>
+  <div className="space-y-12">
+    <div className="space-y-4">
+      <h3 className="text-6xl font-black text-white tracking-tighter uppercase leading-none">{title}</h3>
+      <p className="text-neutral-700 text-xs font-black uppercase tracking-[0.4em]">{subtitle}</p>
     </div>
-    <div className="pt-4">{children}</div>
+    <div className="pt-6">{children}</div>
   </div>
 );
 
 const TabButton: React.FC<{ active: boolean; onClick: () => void; label: string; icon: React.ReactNode }> = ({ active, onClick, label, icon }) => (
   <button 
     onClick={onClick}
-    className={`w-full flex items-center gap-4 px-6 py-4 rounded-sm transition-all text-sm font-bold tracking-tight border ${active ? 'bg-blue-600/10 text-blue-500 border-blue-600/20 shadow-[0_0_30px_rgba(37,99,235,0.05)]' : 'text-neutral-500 hover:text-white hover:bg-white/5 border-transparent'}`}
+    className={`w-full flex items-center gap-6 px-4 py-5 transition-all text-[10px] font-black uppercase tracking-[0.3em] border-l-2 ${active ? 'bg-white/5 text-white border-white' : 'text-neutral-700 hover:text-white border-transparent'}`}
   >
-    <span className={`w-6 h-6 flex items-center justify-center ${active ? 'text-blue-500' : 'text-neutral-600'}`}>{icon}</span>
+    <span className={`w-6 h-6 flex items-center justify-center ${active ? 'text-white' : 'text-neutral-800'}`}>{icon}</span>
     {label}
   </button>
 );
 
-const DeviceSelector: React.FC<{ label: string; value: string; options: MediaDeviceInfo[]; onChange: (v: string) => void; description: string }> = ({ label, value, options, onChange, description }) => (
-  <div className="space-y-4 max-w-xl">
-    <div>
-      <label className="text-xs font-black text-white uppercase tracking-[0.2em]">{label}</label>
-      <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-1">{description}</p>
-    </div>
-    <div className="relative group">
-      <select 
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-[#111] border border-white/5 rounded-sm p-5 text-sm text-white appearance-none outline-none focus:ring-1 focus:ring-blue-600 cursor-pointer transition-all hover:border-white/10"
-      >
-        {options.length === 0 ? (
-          <option value="default">Default System Device</option>
-        ) : (
-          options.map(o => (
-            <option key={o.deviceId} value={o.deviceId}>{o.label || `${label} ${o.deviceId.slice(0, 5)}`}</option>
-          ))
-        )}
-      </select>
-      <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-600">
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-      </div>
-    </div>
+const DeviceSelector: React.FC<{ label: string; value: string; options: MediaDeviceInfo[]; onChange: (v: string) => void }> = ({ label, value, options, onChange }) => (
+  <div className="space-y-4">
+    <label className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.4em]">{label}</label>
+    <select 
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full bg-neutral-900 border border-white/5 py-6 px-8 text-xl text-white appearance-none outline-none focus:border-white transition-all font-black tracking-tight cursor-pointer"
+    >
+      {options.length === 0 ? <option value="default">SYSTEM_DEFAULT</option> : options.map(o => <option key={o.deviceId} value={o.deviceId}>{o.label || `DEV_${o.deviceId.slice(0, 5)}`}</option>)}
+    </select>
   </div>
 );
 
-const SecurityToggle: React.FC<{ label: string; description: string; active: boolean; onChange: () => void; disabled: boolean }> = ({ label, description, active, onChange, disabled }) => (
+const SecurityToggle: React.FC<{ label: string; active: boolean; onChange: () => void; disabled: boolean }> = ({ label, active, onChange, disabled }) => (
   <button 
     onClick={!disabled ? onChange : undefined}
-    className={`w-full flex items-center justify-between p-6 bg-[#111] border border-white/5 rounded-sm transition-all text-left ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:border-white/10 hover:bg-[#151515]'}`}
+    className={`w-full flex items-center justify-between p-8 bg-neutral-950 border border-white/5 transition-all ${disabled ? 'opacity-20 cursor-not-allowed' : 'hover:border-white/10'}`}
   >
-    <div>
-      <h4 className={`text-base font-bold tracking-tight ${active && !disabled ? 'text-blue-500' : 'text-white'}`}>{label}</h4>
-      <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest mt-1">{description}</p>
-    </div>
-    <div className={`w-12 h-6 rounded-full relative transition-all shadow-inner ${active ? 'bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.2)]' : 'bg-neutral-800'}`}>
-      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all shadow-md ${active ? 'right-1' : 'left-1'}`} />
+    <span className={`text-sm font-black uppercase tracking-[0.3em] ${active && !disabled ? 'text-white' : 'text-neutral-600'}`}>{label}</span>
+    <div className={`w-14 h-7 p-1 border ${active ? 'border-white bg-white' : 'border-neutral-800 bg-transparent'} transition-all`}>
+      <div className={`w-full h-full ${active ? 'bg-black' : 'bg-neutral-800'} transition-all`} />
     </div>
   </button>
 );
 
-const QualityOption: React.FC<{ label: string; description: string; active: boolean; onClick: () => void }> = ({ label, description, active, onClick }) => (
+const QualityOption: React.FC<{ label: string; active: boolean; onClick: () => void }> = ({ label, active, onClick }) => (
   <button 
     onClick={onClick}
-    className={`flex flex-col p-6 bg-[#111] border rounded-sm cursor-pointer transition-all text-left group ${active ? 'border-blue-600 bg-blue-600/5 shadow-[0_0_30px_rgba(37,99,235,0.1)]' : 'border-white/5 hover:border-white/10 hover:bg-[#151515]'}`}
+    className={`p-10 border transition-all text-center uppercase font-black text-xs tracking-[0.5em] ${active ? 'bg-white text-black border-white' : 'bg-transparent text-neutral-700 border-white/5 hover:border-white/10'}`}
   >
-    <div className="flex items-center justify-between mb-2">
-      <h4 className={`text-sm font-bold uppercase tracking-widest ${active ? 'text-blue-500' : 'text-white'}`}>{label}</h4>
-      <div className={`w-2 h-2 rounded-full transition-all ${active ? 'bg-blue-500 scale-125' : 'bg-neutral-800'}`} />
-    </div>
-    <p className="text-[10px] text-neutral-500 font-medium leading-relaxed">{description}</p>
+    {label}
   </button>
 );
 
 const ShortcutItem: React.FC<{ keys: string[]; action: string }> = ({ keys, action }) => (
-  <div className="flex items-center justify-between px-8 py-5 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
-    <span className="text-xs font-bold text-neutral-400 uppercase tracking-widest">{action}</span>
-    <div className="flex gap-2">
-      {keys.map(k => (
-        <span key={k} className="px-3 py-1.5 bg-neutral-900 border border-white/10 rounded-sm text-[10px] font-black text-white min-w-[32px] text-center shadow-lg">{k}</span>
-      ))}
+  <div className="flex items-center justify-between py-6 border-b border-white/5 last:border-0">
+    <span className="text-[10px] font-black text-neutral-600 uppercase tracking-widest">{action}</span>
+    <div className="flex gap-4">
+      {keys.map(k => <span key={k} className="px-4 py-2 bg-neutral-900 border border-white/10 text-[10px] font-black text-white">{k}</span>)}
     </div>
   </div>
 );
 
-// Icons
 const DeviceIcon = () => <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" /></svg>;
 const VideoIcon = () => <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>;
-const AudioIcon = () => <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>;
+const AudioIcon = () => <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>;
 const SecurityIcon = () => <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>;
 const ShortcutIcon = () => <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>;
 

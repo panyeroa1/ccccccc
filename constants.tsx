@@ -2,14 +2,14 @@
 import { Participant, ParticipantRole } from './types';
 
 export const COLORS = {
-  primary: '#3b82f6', // electric blue
-  background: '#0a0a0a', // deep charcoal
-  surface: '#111827', // panel surface
-  surfaceLight: '#1f2937', // card surface
-  accent: '#ffffff',
-  danger: '#ef4444',
-  success: '#10b981',
-  warning: '#f59e0b'
+  primary: '#ffffff', // pure white/silver
+  background: '#000000', // absolute black
+  surface: '#0a0a0a', // deep charcoal surface
+  surfaceLight: '#111111', // panel surface
+  accent: '#f5f5f5',
+  danger: '#ff3b30',
+  success: '#34c759',
+  warning: '#ffcc00'
 };
 
 export const MOCK_PARTICIPANTS: Participant[] = [];

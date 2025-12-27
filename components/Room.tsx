@@ -26,16 +26,10 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
   const [showSettings, setShowSettings] = useState(false);
   const [currentDevices, setCurrentDevices] = useState<DeviceSettings>(initialDevices);
   
-  // Modal states
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-
-  // Stream refs
   const screenStreamRef = useRef<MediaStream | null>(null);
-
-  // Captions state
   const [activeCaption, setActiveCaption] = useState<LiveCaption | null>(null);
 
-  // Interaction States
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isSharingScreen, setIsSharingScreen] = useState(false);
@@ -47,7 +41,7 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
   const handleLiveTranscription = useCallback((text: string, isUser: boolean) => {
     setActiveCaption({
       text,
-      speakerName: isUser ? userName : 'Orbit Assistant',
+      speakerName: isUser ? userName : 'ORBIT_AI',
       timestamp: Date.now()
     });
   }, [userName]);
@@ -77,7 +71,7 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
       connection: 'good'
     };
     setParticipants([self]);
-    addToast(`You joined ${roomName}`, 'info');
+    addToast(`CONNECTED_${roomName.toUpperCase()}`, 'info');
   }, [userName, roomName, addToast]);
 
   useEffect(() => {
@@ -92,7 +86,7 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
         if (prev.some(p => p.role === ParticipantRole.AI)) return prev;
         const ai: Participant = { 
           id: 'gemini-ai', 
-          name: 'Orbit Assistant', 
+          name: 'ORBIT_AI', 
           role: ParticipantRole.AI, 
           isMuted: false, 
           isVideoOff: false, 
@@ -112,7 +106,6 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
     setParticipants(prev => prev.map(p => 
       p.id === 'local-user' ? { ...p, reaction: emoji } : p
     ));
-    // Clear reaction after 3 seconds
     setTimeout(() => {
       setParticipants(prev => prev.map(p => 
         p.id === 'local-user' ? { ...p, reaction: undefined } : p
@@ -123,10 +116,10 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
   const toggleRecording = () => {
     if (!isRecording) {
       setIsRecording(true);
-      addToast("Meeting recording started", "success");
+      addToast("ARCHIVE_INITIATED", "success");
     } else {
       setIsRecording(false);
-      addToast("Recording saved to storage", "info");
+      addToast("ARCHIVE_STORED", "info");
     }
   };
 
@@ -136,13 +129,12 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
       screenStreamRef.current = null;
     }
     setIsSharingScreen(false);
-    addToast("Screen sharing stopped", "info");
+    addToast("UPLINK_TERMINATED", "info");
   }, [addToast]);
 
   const startScreenShare = async (withAudio: boolean, surface: DisplaySurface) => {
     setIsShareModalOpen(false);
     try {
-      // Fix: Use 'any' cast to allow properties that might not be in the current TypeScript DOM types (like selfBrowserSurface)
       const constraints: any = {
         video: { displaySurface: surface, frameRate: 30 },
         audio: withAudio ? { autoGainControl: false, echoCancellation: false, noiseSuppression: false } : false,
@@ -152,11 +144,11 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
       const stream = await navigator.mediaDevices.getDisplayMedia(constraints);
       screenStreamRef.current = stream;
       setIsSharingScreen(true);
-      addToast(`Sharing your ${surface === 'monitor' ? 'screen' : surface}`, "success");
+      addToast(`STREAMING_${surface.toUpperCase()}`, "success");
       stream.getTracks()[0].onended = () => stopScreenShare();
     } catch (err) {
       if ((err as Error).name !== 'NotAllowedError') {
-        addToast("Failed to start screen share", "error");
+        addToast("STREAM_ERROR", "error");
       }
       setIsSharingScreen(false);
     }
@@ -187,40 +179,40 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
     reader.onloadend = async () => {
       const base64 = (reader.result as string).split(',')[1];
       const text = await transcribeAudio(base64);
-      if (text.length > 3) handleSendMessage(`(Auto-Caption): ${text}`);
+      if (text.length > 3) handleSendMessage(`(AUTO): ${text}`);
     };
   };
 
   return (
     <div className="relative w-full h-full flex flex-col bg-black overflow-hidden font-sans">
-      <header className="h-14 flex items-center justify-between px-6 bg-gradient-to-b from-black/80 to-transparent z-20 absolute top-0 left-0 right-0">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 group">
-            <div className="w-6 h-6 rounded-sm bg-blue-600 flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+      <header className="h-16 flex items-center justify-between px-10 bg-black/80 backdrop-blur-3xl z-20 absolute top-0 left-0 right-0 border-b border-white/5">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 group cursor-default">
+            <div className="w-8 h-8 bg-white flex items-center justify-center">
+              <svg className="w-5 h-5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
             </div>
-            <span className="text-white text-sm font-bold tracking-tight uppercase">Orbit</span>
+            <span className="text-white text-base font-black tracking-tight uppercase">Orbit</span>
           </div>
-          <div className="w-px h-4 bg-white/10" />
-          <span className="text-white/70 font-medium text-xs tracking-tight">{roomName}</span>
+          <div className="w-px h-6 bg-white/10" />
+          <span className="text-neutral-500 font-black text-[11px] tracking-[0.3em] uppercase">{roomName}</span>
           
           {isRecording && (
-            <div className="flex items-center gap-2 ml-4 bg-red-600/10 border border-red-500/20 px-2 py-1 rounded animate-pulse">
-              <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />
-              <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">REC</span>
+            <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1 rounded-sm">
+              <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
+              <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Archiving</span>
             </div>
           )}
         </div>
-        <div className="flex items-center gap-4">
-           <div className="flex items-center gap-2 px-3 py-1 bg-neutral-900 border border-white/5 rounded text-[10px] font-bold text-neutral-400">
-             <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-             E2E ENCRYPTED
+        <div className="flex items-center gap-6">
+           <div className="flex items-center gap-2 text-[10px] font-black text-neutral-600 uppercase tracking-widest">
+             <div className="w-1.5 h-1.5 bg-neutral-800 rounded-full" />
+             VOID_PROTOCOL_ACTIVE
            </div>
         </div>
       </header>
 
       <main className="flex-1 relative flex overflow-hidden">
-        <div className={`flex-1 transition-all duration-500 ease-in-out ${showSidebar ? 'mr-[380px]' : ''}`}>
+        <div className={`flex-1 transition-all duration-700 ease-in-out ${showSidebar ? 'mr-[400px]' : ''}`}>
            <ParticipantGrid participants={participants} />
            
            <CaptionOverlay 
@@ -258,7 +250,7 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
         isRecording={isRecording}
         onToggleRecording={toggleRecording}
         onReaction={handleReaction}
-        onOpenIntegrations={() => addToast("Integrations coming soon", "info")}
+        onOpenIntegrations={() => addToast("INTEGRATIONS_OFFLINE", "info")}
         onOpenSettings={() => setShowSettings(true)}
         onLeave={onLeave}
         onToggleSidebar={(tab) => {
@@ -287,9 +279,9 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
         onConfirm={startScreenShare}
       />
 
-      <div className="absolute top-20 right-6 z-[60] flex flex-col gap-2">
+      <div className="absolute top-24 right-10 z-[60] flex flex-col gap-3">
         {toasts.map(t => (
-          <div key={t.id} className={`px-4 py-2.5 rounded border backdrop-blur-md animate-in slide-in-from-right-4 duration-300 shadow-xl ${t.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-500' : t.type === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-500' : 'bg-neutral-900/90 border-white/5 text-white'} text-[11px] font-bold uppercase tracking-wider`}>
+          <div key={t.id} className={`px-6 py-4 rounded-none border-l-4 backdrop-blur-3xl animate-in slide-in-from-right-10 duration-500 shadow-2xl ${t.type === 'success' ? 'bg-neutral-900 border-white text-white' : t.type === 'error' ? 'bg-red-950/20 border-red-500 text-red-500' : 'bg-black/90 border-neutral-800 text-neutral-400'} text-[10px] font-black uppercase tracking-[0.3em]`}>
              {t.text}
           </div>
         ))}

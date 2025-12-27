@@ -1,11 +1,12 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Participant, ParticipantRole, ChatMessage, DeviceSettings, ToastMessage, ConnectionQuality, LiveCaption } from '../types';
 import ParticipantGrid from './ParticipantGrid';
 import ControlDock from './ControlDock';
 import Sidebar from './Sidebar';
 import SettingsPage from './SettingsPage';
 import CaptionOverlay from './CaptionOverlay';
+import ScreenShareModal from './ScreenShareModal';
 import { useGeminiLive } from '../hooks/useGeminiLive';
 import { transcribeAudio } from '../services/geminiService';
 
@@ -25,6 +26,12 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
   const [showSettings, setShowSettings] = useState(false);
   const [currentDevices, setCurrentDevices] = useState<DeviceSettings>(initialDevices);
   
+  // Modal states
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
+  // Stream refs
+  const screenStreamRef = useRef<MediaStream | null>(null);
+
   // Captions state
   const [activeCaption, setActiveCaption] = useState<LiveCaption | null>(null);
 
@@ -100,39 +107,46 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
     }
   }, [aiActive]);
 
-  useEffect(() => {
-    const guestNames = ["Marcus Thorne", "Ada Lovelace", "Linus Torvalds"];
-    const simulationInterval = setInterval(() => {
-      setParticipants(prev => {
-        const remoteParticipants = prev.filter(p => p.id !== 'local-user' && p.role !== ParticipantRole.AI);
-        if (remoteParticipants.length < 3 && Math.random() > 0.95) {
-          const newName = guestNames[Math.floor(Math.random() * guestNames.length)];
-          const newGuest: Participant = {
-            id: `sim-${Date.now()}`,
-            name: newName,
-            role: ParticipantRole.PARTICIPANT,
-            isMuted: Math.random() > 0.3,
-            isVideoOff: Math.random() > 0.7,
-            isSharingScreen: false,
-            isSpeaking: false,
-            isHandRaised: false,
-            connection: 'good'
-          };
-          addToast(`${newName} joined the meeting`, 'info');
-          return [...prev, newGuest];
-        }
-        return prev.map(p => {
-          if (p.id === 'local-user' || p.role === ParticipantRole.AI) return p;
-          return { 
-            ...p, 
-            isHandRaised: Math.random() > 0.98 ? !p.isHandRaised : p.isHandRaised,
-            isMuted: Math.random() > 0.98 ? !p.isMuted : p.isMuted
-          };
-        });
-      });
-    }, 8000);
-    return () => clearInterval(simulationInterval);
+  const stopScreenShare = useCallback(() => {
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach(track => track.stop());
+      screenStreamRef.current = null;
+    }
+    setIsSharingScreen(false);
+    addToast("Screen sharing stopped", "info");
   }, [addToast]);
+
+  const startScreenShare = async (withAudio: boolean) => {
+    setIsShareModalOpen(false);
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: withAudio
+      });
+      
+      screenStreamRef.current = stream;
+      setIsSharingScreen(true);
+      addToast("You are now sharing your screen", "success");
+
+      // Handle user stopping share via browser UI
+      stream.getTracks()[0].onended = () => {
+        stopScreenShare();
+      };
+
+    } catch (err) {
+      console.error("Failed to start screen share:", err);
+      addToast("Screen share cancelled", "info");
+      setIsSharingScreen(false);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (screenStreamRef.current) {
+        screenStreamRef.current.getTracks().forEach(t => t.stop());
+      }
+    };
+  }, []);
 
   const handleSendMessage = (text: string) => {
     const msg: ChatMessage = {
@@ -202,7 +216,10 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
         isVideoOff={isVideoOff}
         onToggleVideo={() => setIsVideoOff(!isVideoOff)}
         isSharingScreen={isSharingScreen}
-        onToggleScreenShare={() => setIsSharingScreen(!isSharingScreen)}
+        onToggleScreenShare={() => {
+          if (isSharingScreen) stopScreenShare();
+          else setIsShareModalOpen(true);
+        }}
         isHandRaised={isHandRaised}
         onToggleHand={() => setIsHandRaised(!isHandRaised)}
         isCaptionsActive={isCaptionsActive}
@@ -236,6 +253,12 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
         setDevices={setCurrentDevices}
         role={ParticipantRole.HOST}
         roomName={roomName}
+      />
+
+      <ScreenShareModal 
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        onConfirm={startScreenShare}
       />
 
       <div className="absolute top-20 right-6 z-[60] flex flex-col gap-2">

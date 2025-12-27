@@ -38,7 +38,6 @@ const ParticipantGrid: React.FC<ParticipantGridProps> = ({ participants }) => {
 
   const count = participants.length;
   
-  // Dynamic Grid Logic for Jitsi-like scaling
   const getGridConfig = () => {
     if (count === 1) return 'grid-cols-1 max-w-4xl';
     if (count === 2) return 'grid-cols-1 md:grid-cols-2 max-w-6xl';
@@ -121,7 +120,6 @@ const ParticipantTile: React.FC<{
             <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-transparent pointer-events-none" />
             <svg className="w-10 h-10 text-blue-500 opacity-40 mb-3 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
             <span className="text-white/30 text-[9px] font-black uppercase tracking-[0.2em]">Display Stream</span>
-            <div className="absolute inset-0 pointer-events-none opacity-[0.02] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%]" />
           </div>
         ) : (participant.isVideoOff || participant.role === ParticipantRole.AI) ? (
           <div className="w-full h-full bg-[#0a0a0a] flex items-center justify-center">
@@ -139,6 +137,15 @@ const ParticipantTile: React.FC<{
           />
         )}
       </div>
+
+      {/* Floating Reaction Animation */}
+      {participant.reaction && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-40">
+           <div className="text-6xl animate-orbit-reaction">
+              {participant.reaction}
+           </div>
+        </div>
+      )}
 
       {/* Speaking Glow */}
       {isCurrentlySpeaking && (
@@ -194,11 +201,18 @@ const ParticipantTile: React.FC<{
           0%, 100% { height: 30%; opacity: 0.6; }
           50% { height: 100%; opacity: 1; }
         }
+        @keyframes orbit-reaction {
+          0% { transform: scale(0.5) translateY(20px); opacity: 0; }
+          20% { transform: scale(1.4) translateY(-10px); opacity: 1; }
+          80% { transform: scale(1.2) translateY(-20px); opacity: 1; }
+          100% { transform: scale(1) translateY(-100px); opacity: 0; }
+        }
         .animate-orbit-pulse-ring { animation: orbit-pulse-ring 2s cubic-bezier(0.16, 1, 0.3, 1) infinite; }
         .animate-orbit-glow { animation: orbit-glow 2.8s ease-in-out infinite; }
         .animate-orbit-wave-1 { animation: orbit-wave 0.45s ease-in-out infinite; }
         .animate-orbit-wave-2 { animation: orbit-wave 0.65s ease-in-out infinite 0.1s; }
         .animate-orbit-wave-3 { animation: orbit-wave 0.55s ease-in-out infinite 0.2s; }
+        .animate-orbit-reaction { animation: orbit-reaction 3s cubic-bezier(0.17, 0.67, 0.83, 0.67) forwards; }
       `}</style>
     </div>
   );

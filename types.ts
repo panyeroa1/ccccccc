@@ -25,6 +25,7 @@ export interface Participant {
   isHandRaised?: boolean;
   avatar?: string;
   connection?: ConnectionQuality;
+  reaction?: string; // Current active reaction
 }
 
 export interface ChatMessage {

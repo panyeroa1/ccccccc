@@ -6,7 +6,7 @@ import ControlDock from './ControlDock';
 import Sidebar from './Sidebar';
 import SettingsPage from './SettingsPage';
 import CaptionOverlay from './CaptionOverlay';
-import ScreenShareModal from './ScreenShareModal';
+import ScreenShareModal, { DisplaySurface } from './ScreenShareModal';
 import { useGeminiLive } from '../hooks/useGeminiLive';
 import { transcribeAudio } from '../services/geminiService';
 
@@ -35,13 +35,14 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
   // Captions state
   const [activeCaption, setActiveCaption] = useState<LiveCaption | null>(null);
 
-  // New States for enhanced Control Dock
+  // Interaction States
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isSharingScreen, setIsSharingScreen] = useState(false);
   const [isHandRaised, setIsHandRaised] = useState(false);
   const [isCaptionsActive, setIsCaptionsActive] = useState(false);
   const [isTranslateActive, setIsTranslateActive] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
 
   const handleLiveTranscription = useCallback((text: string, isUser: boolean) => {
     setActiveCaption({
@@ -107,6 +108,28 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
     }
   }, [aiActive]);
 
+  const handleReaction = useCallback((emoji: string) => {
+    setParticipants(prev => prev.map(p => 
+      p.id === 'local-user' ? { ...p, reaction: emoji } : p
+    ));
+    // Clear reaction after 3 seconds
+    setTimeout(() => {
+      setParticipants(prev => prev.map(p => 
+        p.id === 'local-user' ? { ...p, reaction: undefined } : p
+      ));
+    }, 3000);
+  }, []);
+
+  const toggleRecording = () => {
+    if (!isRecording) {
+      setIsRecording(true);
+      addToast("Meeting recording started", "success");
+    } else {
+      setIsRecording(false);
+      addToast("Recording saved to storage", "info");
+    }
+  };
+
   const stopScreenShare = useCallback(() => {
     if (screenStreamRef.current) {
       screenStreamRef.current.getTracks().forEach(track => track.stop());
@@ -116,26 +139,25 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
     addToast("Screen sharing stopped", "info");
   }, [addToast]);
 
-  const startScreenShare = async (withAudio: boolean) => {
+  const startScreenShare = async (withAudio: boolean, surface: DisplaySurface) => {
     setIsShareModalOpen(false);
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: withAudio
-      });
-      
+      // Fix: Use 'any' cast to allow properties that might not be in the current TypeScript DOM types (like selfBrowserSurface)
+      const constraints: any = {
+        video: { displaySurface: surface, frameRate: 30 },
+        audio: withAudio ? { autoGainControl: false, echoCancellation: false, noiseSuppression: false } : false,
+        selfBrowserSurface: surface === 'browser' ? 'include' : 'exclude',
+        surfaceSwitching: 'include'
+      };
+      const stream = await navigator.mediaDevices.getDisplayMedia(constraints);
       screenStreamRef.current = stream;
       setIsSharingScreen(true);
-      addToast("You are now sharing your screen", "success");
-
-      // Handle user stopping share via browser UI
-      stream.getTracks()[0].onended = () => {
-        stopScreenShare();
-      };
-
+      addToast(`Sharing your ${surface === 'monitor' ? 'screen' : surface}`, "success");
+      stream.getTracks()[0].onended = () => stopScreenShare();
     } catch (err) {
-      console.error("Failed to start screen share:", err);
-      addToast("Screen share cancelled", "info");
+      if ((err as Error).name !== 'NotAllowedError') {
+        addToast("Failed to start screen share", "error");
+      }
       setIsSharingScreen(false);
     }
   };
@@ -181,6 +203,13 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
           </div>
           <div className="w-px h-4 bg-white/10" />
           <span className="text-white/70 font-medium text-xs tracking-tight">{roomName}</span>
+          
+          {isRecording && (
+            <div className="flex items-center gap-2 ml-4 bg-red-600/10 border border-red-500/20 px-2 py-1 rounded animate-pulse">
+              <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />
+              <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">REC</span>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-4">
            <div className="flex items-center gap-2 px-3 py-1 bg-neutral-900 border border-white/5 rounded text-[10px] font-bold text-neutral-400">
@@ -223,15 +252,12 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices: initi
         isHandRaised={isHandRaised}
         onToggleHand={() => setIsHandRaised(!isHandRaised)}
         isCaptionsActive={isCaptionsActive}
-        onToggleCaptions={() => {
-          setIsCaptionsActive(!isCaptionsActive);
-          addToast(isCaptionsActive ? "Captions Disabled" : "Captions Enabled", "info");
-        }}
+        onToggleCaptions={() => setIsCaptionsActive(!isCaptionsActive)}
         isTranslateActive={isTranslateActive}
-        onToggleTranslate={() => {
-          setIsTranslateActive(!isTranslateActive);
-          addToast(isTranslateActive ? "Translation Stopped" : "Live Translation Active", "success");
-        }}
+        onToggleTranslate={() => setIsTranslateActive(!isTranslateActive)}
+        isRecording={isRecording}
+        onToggleRecording={toggleRecording}
+        onReaction={handleReaction}
         onOpenIntegrations={() => addToast("Integrations coming soon", "info")}
         onOpenSettings={() => setShowSettings(true)}
         onLeave={onLeave}

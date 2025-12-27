@@ -33,11 +33,11 @@ export const upsertCaption = async (roomName: string, caption: LiveCaption) => {
   const { error } = await supabase
     .from('captions')
     .upsert([{
-      room_id: roomName,
+      room: roomName,
       text: caption.text,
       speaker_name: caption.speakerName,
       timestamp: caption.timestamp
-    }], { onConflict: 'room_id' });
+    }], { onConflict: 'room' });
 
   if (error) logDbError('upsertCaption', error);
 };
@@ -47,7 +47,7 @@ export const subscribeToCaptions = (roomName: string, onUpdate: (caption: LiveCa
     .channel(`captions:${roomName}`)
     .on(
       'postgres_changes',
-      { event: '*', schema: 'public', table: 'captions', filter: `room_id=eq.${roomName}` },
+      { event: '*', schema: 'public', table: 'captions', filter: `room=eq.${roomName}` },
       (payload) => {
         const c = payload.new;
         if (c) {
@@ -70,7 +70,7 @@ export const fetchMessages = async (roomName: string): Promise<ChatMessage[]> =>
   const { data, error } = await supabase
     .from('messages')
     .select('*')
-    .eq('room_id', roomName)
+    .eq('room', roomName)
     .order('timestamp', { ascending: true })
     .limit(50);
 
@@ -94,7 +94,7 @@ export const sendMessageToSupabase = async (roomName: string, message: ChatMessa
     .from('messages')
     .insert([{
       id: message.id,
-      room_id: roomName,
+      room: roomName,
       sender_id: message.senderId,
       sender_name: message.senderName,
       text: message.text,
@@ -110,7 +110,7 @@ export const subscribeToMessages = (roomName: string, onMessage: (msg: ChatMessa
     .channel(`messages:${roomName}`)
     .on(
       'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${roomName}` },
+      { event: 'INSERT', schema: 'public', table: 'messages', filter: `room=eq.${roomName}` },
       (payload) => {
         const m = payload.new;
         onMessage({
@@ -135,14 +135,14 @@ export const syncParticipant = async (roomName: string, p: Participant) => {
     .from('participants')
     .upsert([{
       id: p.id,
-      room_id: roomName,
+      room: roomName,
       name: p.name,
       role: p.role,
       is_muted: p.isMuted,
       is_video_off: p.isVideoOff,
       is_sharing_screen: p.isSharingScreen,
       is_hand_raised: p.isHandRaised || false,
-      connection: p.connection || 'good',
+      status: p.connection || 'good',
       last_seen: Date.now()
     }], { onConflict: 'id' });
 
@@ -154,7 +154,7 @@ export const fetchParticipants = async (roomName: string): Promise<Participant[]
   const { data, error } = await supabase
     .from('participants')
     .select('*')
-    .eq('room_id', roomName)
+    .eq('room', roomName)
     .gt('last_seen', cutoff);
 
   if (error) {
@@ -171,7 +171,7 @@ export const fetchParticipants = async (roomName: string): Promise<Participant[]
     isSharingScreen: p.is_sharing_screen,
     isSpeaking: false,
     isHandRaised: p.is_hand_raised,
-    connection: p.connection as ConnectionQuality
+    connection: (p.status || 'good') as ConnectionQuality
   }));
 };
 
@@ -180,7 +180,7 @@ export const subscribeToParticipants = (roomName: string, onUpdate: () => void) 
     .channel(`participants:${roomName}`)
     .on(
       'postgres_changes',
-      { event: '*', schema: 'public', table: 'participants', filter: `room_id=eq.${roomName}` },
+      { event: '*', schema: 'public', table: 'participants', filter: `room=eq.${roomName}` },
       () => onUpdate()
     )
     .subscribe();

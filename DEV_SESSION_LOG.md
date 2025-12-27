@@ -45,3 +45,14 @@
 - Removed `reaction` column from `PARTICIPANT_COLUMNS` and `syncParticipant` record.
 - Reactions are now local-only to maintain application stability against missing DB columns.
 **End**: 2025-05-25 20:05:00
+
+## Session ID: 20250526-090000
+**Start**: 2025-05-26 09:00:00
+**Objective**: Resolve 'last_seen' schema mismatch error.
+**Scope boundaries**: `services/supabaseService.ts`.
+**Repo state**: Maintenance.
+**Changes**:
+- Removed `last_seen` column from `PARTICIPANT_COLUMNS` and `syncParticipant` upsert payload.
+- Removed time-based filtering in `fetchParticipants` as the column is missing from the database.
+- Presence will rely on active channel subscriptions and room_id association until schema is expanded.
+**End**: 2025-05-26 09:05:00

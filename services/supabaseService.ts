@@ -11,7 +11,7 @@ const logDbError = (context: string, error: any) => {
   console.error(`DB_ERROR [${context}]:`, error?.message || error);
 };
 
-const PARTICIPANT_COLUMNS = 'id, name, role, status, last_seen, room_id';
+const PARTICIPANT_COLUMNS = 'id, name, role, status, room_id';
 const MESSAGE_COLUMNS = 'id, sender_id, sender_name, text, timestamp, is_ai, room_id';
 
 /**
@@ -128,8 +128,7 @@ export const syncParticipant = async (roomName: string, p: Participant) => {
     room_id: roomName,
     name: p.name,
     role: p.role,
-    status: p.status,
-    last_seen: Date.now()
+    status: p.status
   };
 
   const { error } = await supabase
@@ -140,12 +139,10 @@ export const syncParticipant = async (roomName: string, p: Participant) => {
 };
 
 export const fetchParticipants = async (roomName: string): Promise<Participant[]> => {
-  const cutoff = Date.now() - 30000;
   const { data, error } = await supabase
     .from('participants')
     .select(PARTICIPANT_COLUMNS)
-    .eq('room_id', roomName)
-    .gt('last_seen', cutoff);
+    .eq('room_id', roomName);
 
   if (error) {
     logDbError('fetchParticipants', error);

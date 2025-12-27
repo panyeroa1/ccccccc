@@ -6,66 +6,53 @@ export enum RoomState {
 }
 
 export enum ParticipantRole {
-  HOST = 'host',
-  MODERATOR = 'moderator',
-  PARTICIPANT = 'attendee',
-  AI = 'ai'
+  HOST = 'HOST',
+  MODERATOR = 'MODERATOR',
+  PARTICIPANT = 'PARTICIPANT',
+  AI = 'AI'
 }
 
-export type ParticipantStatus = 'online' | 'offline' | 'waiting' | 'approved' | 'denied';
+export type ParticipantStatus = 'waiting' | 'approved' | 'denied';
 
 export type ConnectionQuality = 'good' | 'fair' | 'poor';
 
-export interface Profile {
-  id: string;
-  email?: string;
-  display_name: string;
-  avatar_url?: string;
-}
-
-export interface Meeting {
-  id: string;
-  code: string;
-  title: string;
-  host_id: string;
-  settings: any;
-}
-
 export interface Participant {
   id: string;
-  meeting_id: string;
-  user_id: string;
   name: string;
-  role: string;
+  role: ParticipantRole;
   status: ParticipantStatus;
   isMuted: boolean;
   isVideoOff: boolean;
   isSharingScreen: boolean;
   isSpeaking: boolean;
   isHandRaised?: boolean;
+  avatar?: string;
+  connection?: ConnectionQuality;
   reaction?: string;
   lastSeen?: number;
 }
 
-export interface ChatMessage {
+export interface RoomCommand {
   id: string;
-  meeting_id: string;
-  sender_id: string;
-  sender_name: string;
-  text: string;
-  timestamp: string;
-  isAi?: boolean;
+  room: string;
+  targetId: string | 'all';
+  type: 'MUTE' | 'KICK' | 'ADMIT' | 'DENY';
+  issuerId: string;
 }
 
-export type NoiseSuppressionLevel = 'off' | 'low' | 'medium' | 'high';
+export interface ChatMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  timestamp: number;
+  isAi?: boolean;
+}
 
 export interface DeviceSettings {
   audioInputId: string;
   videoInputId: string;
   audioOutputId: string;
-  noiseSuppression: NoiseSuppressionLevel;
-  echoCancellation: boolean;
-  autoGainControl: boolean;
 }
 
 export interface ToastMessage {
@@ -75,18 +62,9 @@ export interface ToastMessage {
 }
 
 export interface LiveCaption {
-  id?: string;
   text: string;
   speakerName: string;
-  timestamp: string;
+  timestamp: number;
 }
 
 export type SidebarTab = 'chat' | 'participants' | 'info';
-
-export interface RoomCommand {
-  id: string;
-  room_id: string;
-  targetId: string | 'all';
-  type: 'MUTE' | 'KICK' | 'ADMIT' | 'DENY';
-  issuerId: string;
-}

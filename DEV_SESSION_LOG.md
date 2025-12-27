@@ -35,3 +35,13 @@
 - Removed `is_muted`, `is_video_off`, and `is_sharing_screen` from the database selection and insertion logic.
 - These fields are now treated as local UI state to ensure database stability while the underlying schema is updated or mapped correctly.
 **End**: 2025-05-25 19:10:00
+
+## Session ID: 20250525-200000
+**Start**: 2025-05-25 20:00:00
+**Objective**: Resolve 'reaction' schema mismatch error.
+**Scope boundaries**: `services/supabaseService.ts`.
+**Repo state**: Maintenance / Stabilization.
+**Changes**:
+- Removed `reaction` column from `PARTICIPANT_COLUMNS` and `syncParticipant` record.
+- Reactions are now local-only to maintain application stability against missing DB columns.
+**End**: 2025-05-25 20:05:00

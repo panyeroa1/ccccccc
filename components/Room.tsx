@@ -20,10 +20,14 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices }) => 
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [showSidebar, setShowSidebar] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<'chat' | 'participants'>('chat');
+  
+  // New States for enhanced Control Dock
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isSharingScreen, setIsSharingScreen] = useState(false);
   const [isHandRaised, setIsHandRaised] = useState(false);
+  const [isCaptionsActive, setIsCaptionsActive] = useState(false);
+  const [isTranslateActive, setIsTranslateActive] = useState(false);
 
   const { isActive: aiActive, isConnecting: aiConnecting, startSession: startAi, stopSession: stopAi } = useGeminiLive();
 
@@ -35,7 +39,6 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices }) => 
     }, 3000);
   }, []);
 
-  // Initial Setup: Single User Entry
   useEffect(() => {
     const self: Participant = {
       id: 'local-user',
@@ -48,20 +51,16 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices }) => 
       isHandRaised: false,
       connection: 'good'
     };
-    
-    // We start with only the user. AI is toggled manually via the dock.
     setParticipants([self]);
     addToast(`You joined ${roomName}`, 'info');
   }, [userName, roomName, addToast]);
 
-  // Sync state
   useEffect(() => {
     setParticipants(prev => prev.map(p => 
       p.id === 'local-user' ? { ...p, isMuted, isVideoOff, isSharingScreen, isHandRaised } : p
     ));
   }, [isMuted, isVideoOff, isSharingScreen, isHandRaised]);
 
-  // Handle AI participant visibility
   useEffect(() => {
     if (aiActive) {
       setParticipants(prev => {
@@ -84,14 +83,11 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices }) => 
     }
   }, [aiActive]);
 
-  // Toned down simulation
   useEffect(() => {
     const guestNames = ["Marcus Thorne", "Ada Lovelace", "Linus Torvalds"];
     const simulationInterval = setInterval(() => {
       setParticipants(prev => {
         const remoteParticipants = prev.filter(p => p.id !== 'local-user' && p.role !== ParticipantRole.AI);
-        
-        // Lower probability of someone joining
         if (remoteParticipants.length < 3 && Math.random() > 0.95) {
           const newName = guestNames[Math.floor(Math.random() * guestNames.length)];
           const newGuest: Participant = {
@@ -108,7 +104,6 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices }) => 
           addToast(`${newName} joined the meeting`, 'info');
           return [...prev, newGuest];
         }
-
         return prev.map(p => {
           if (p.id === 'local-user' || p.role === ParticipantRole.AI) return p;
           return { 
@@ -121,11 +116,6 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices }) => 
     }, 8000);
     return () => clearInterval(simulationInterval);
   }, [addToast]);
-
-  const handleKickParticipant = (id: string) => {
-    setParticipants(prev => prev.filter(p => p.id !== id));
-    addToast("Participant removed.", "error");
-  };
 
   const handleSendMessage = (text: string) => {
     const msg: ChatMessage = {
@@ -181,7 +171,6 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices }) => 
           messages={messages}
           participants={participants}
           onSendMessage={handleSendMessage}
-          onKick={handleKickParticipant}
         />
       </main>
 
@@ -194,6 +183,18 @@ const Room: React.FC<RoomProps> = ({ userName, roomName, onLeave, devices }) => 
         onToggleScreenShare={() => setIsSharingScreen(!isSharingScreen)}
         isHandRaised={isHandRaised}
         onToggleHand={() => setIsHandRaised(!isHandRaised)}
+        isCaptionsActive={isCaptionsActive}
+        onToggleCaptions={() => {
+          setIsCaptionsActive(!isCaptionsActive);
+          addToast(isCaptionsActive ? "Captions Disabled" : "Captions Enabled", "info");
+        }}
+        isTranslateActive={isTranslateActive}
+        onToggleTranslate={() => {
+          setIsTranslateActive(!isTranslateActive);
+          addToast(isTranslateActive ? "Translation Stopped" : "Live Translation Active", "success");
+        }}
+        onOpenIntegrations={() => addToast("Integrations coming soon", "info")}
+        onOpenSettings={() => addToast("Settings Panel Opened", "info")}
         onLeave={onLeave}
         onToggleSidebar={(tab) => {
           if (showSidebar && sidebarTab === tab) setShowSidebar(false);

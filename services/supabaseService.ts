@@ -142,7 +142,7 @@ export const syncParticipant = async (roomName: string, p: Participant) => {
       is_video_off: p.isVideoOff,
       is_sharing_screen: p.isSharingScreen,
       is_hand_raised: p.isHandRaised || false,
-      status: p.connection || 'good',
+      // Removed 'status' / 'connection' column to fix PGRST204 errors
       last_seen: Date.now()
     }], { onConflict: 'id' });
 
@@ -171,7 +171,7 @@ export const fetchParticipants = async (roomName: string): Promise<Participant[]
     isSharingScreen: p.is_sharing_screen,
     isSpeaking: false,
     isHandRaised: p.is_hand_raised,
-    connection: (p.status || 'good') as ConnectionQuality
+    connection: 'good' as ConnectionQuality // Default to good since DB doesn't support this column
   }));
 };
 

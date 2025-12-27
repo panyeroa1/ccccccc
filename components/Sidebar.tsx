@@ -26,6 +26,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   const localUser = participants.find(p => p.id === localParticipantId);
   const isHost = localUser?.role === ParticipantRole.HOST;
 
+  // Dynamically build the invite link
+  const inviteLink = roomName ? `${window.location.origin}/?room=${roomName}` : window.location.origin;
+
   useEffect(() => {
     if (scrollRef.current && tab === 'chat') {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -104,9 +107,19 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className="space-y-10">
              <div className="space-y-4">
                <label className="text-[10px] text-neutral-600 uppercase">Invite Link</label>
-               <div className="bg-neutral-900 p-4 text-xs text-white truncate border border-white/5">orbit.ai/{roomName}</div>
+               <div className="bg-neutral-900 p-4 text-xs text-white truncate border border-white/5 select-all overflow-hidden whitespace-nowrap overflow-ellipsis">
+                  {inviteLink}
+               </div>
              </div>
-             <button onClick={() => { navigator.clipboard.writeText(`orbit.ai/${roomName}`); }} className="w-full py-5 bg-white text-black text-[10px] uppercase tracking-[0.4em]">Copy Link</button>
+             <button 
+               onClick={() => { 
+                 navigator.clipboard.writeText(inviteLink);
+                 // Optional: provide visual feedback here
+               }} 
+               className="w-full py-5 bg-white text-black text-[10px] uppercase tracking-[0.4em] active:bg-neutral-200 transition-colors"
+             >
+               Copy Link
+             </button>
           </div>
         )}
       </div>

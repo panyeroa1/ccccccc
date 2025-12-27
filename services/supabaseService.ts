@@ -1,6 +1,6 @@
 
 import { createClient } from '@supabase/supabase-js';
-import { ChatMessage, Participant, ConnectionQuality, LiveCaption, RoomCommand } from '../types';
+import { ChatMessage, Participant, LiveCaption, RoomCommand, Meeting, Profile } from '../types';
 
 const SUPABASE_URL = 'https://rcbuikbjqgykssiatxpo.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_uTIwEo4TJBo_YkX-OWN9qQ_5HJvl4c5';
@@ -11,149 +11,63 @@ const logDbError = (context: string, error: any) => {
   console.error(`DB_ERROR [${context}]:`, error?.message || error);
 };
 
-// Known valid columns for participants to avoid schema cache issues with select('*')
-// Removed is_muted, is_video_off, is_sharing_screen as they appear to be missing from the schema
-const PARTICIPANT_COLUMNS = 'id, name, role, status, reaction, last_seen, room_id';
-const MESSAGE_COLUMNS = 'id, sender_id, sender_name, text, timestamp, is_ai, room_id';
-
-/** 
- * COMMAND SYSTEM (Mute/Kick/Admit)
- */
-export const sendRoomCommand = async (command: Omit<RoomCommand, 'id'>) => {
-  const { error } = await supabase
-    .from('commands')
-    .insert([{ 
-      id: crypto.randomUUID(),
-      room_id: command.room,
-      targetId: command.targetId,
-      type: command.type,
-      issuerId: command.issuerId
-    }]);
-  if (error) logDbError('sendRoomCommand', error);
-};
-
-export const subscribeToCommands = (roomName: string, onCommand: (cmd: RoomCommand) void) => {
-  return supabase
-    .channel(`commands:${roomName}`)
-    .on(
-      'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'commands', filter: `room_id=eq.${roomName}` },
-      (payload) => {
-        const c = payload.new;
-        onCommand({
-          id: c.id,
-          room: c.room_id,
-          targetId: c.targetId,
-          type: c.type,
-          issuerId: c.issuerId
-        });
-      }
-    )
-    .subscribe();
-};
-
 /**
- * CAPTION OPERATIONS
+ * PROFILES
  */
-export const upsertCaption = async (roomName: string, caption: LiveCaption) => {
+export const upsertProfile = async (profile: Profile) => {
   const { error } = await supabase
-    .from('captions')
+    .from('profiles')
     .upsert([{
-      room_id: roomName,
-      text: caption.text,
-      speaker_name: caption.speakerName,
-      timestamp: caption.timestamp
-    }], { onConflict: 'room_id' }); 
-  if (error) logDbError('upsertCaption', error);
-};
-
-export const subscribeToCaptions = (roomName: string, onUpdate: (caption: LiveCaption) => void) => {
-  return supabase
-    .channel(`captions:${roomName}`)
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'captions', filter: `room_id=eq.${roomName}` },
-      (payload) => {
-        if (payload.new) {
-          onUpdate({
-            text: payload.new.text,
-            speakerName: payload.new.speaker_name,
-            timestamp: payload.new.timestamp
-          });
-        }
-      }
-    )
-    .subscribe();
+      id: profile.id,
+      display_name: profile.display_name,
+      avatar_url: profile.avatar_url,
+      updated_at: new Date().toISOString()
+    }]);
+  if (error) logDbError('upsertProfile', error);
 };
 
 /**
- * MESSAGES
+ * MEETINGS
  */
-export const fetchMessages = async (roomName: string): Promise<ChatMessage[]> => {
-  const { data, error } = await supabase
-    .from('messages')
-    .select(MESSAGE_COLUMNS)
-    .eq('room_id', roomName)
-    .order('timestamp', { ascending: true });
-  
-  if (error) {
-    logDbError('fetchMessages', error);
-    return [];
+export const getOrCreateMeeting = async (code: string, userId: string, title: string = "Orbit Session"): Promise<Meeting | null> => {
+  const { data: existing, error: fetchError } = await supabase
+    .from('meetings')
+    .select('*')
+    .eq('code', code)
+    .maybeSingle();
+
+  if (existing) return existing;
+
+  const { data: created, error: createError } = await supabase
+    .from('meetings')
+    .insert([{ 
+      code, 
+      title, 
+      host_id: userId,
+      settings: {} 
+    }])
+    .select()
+    .single();
+
+  if (createError) {
+    logDbError('getOrCreateMeeting', createError);
+    return null;
   }
-  return data.map(m => ({
-    id: m.id,
-    senderId: m.sender_id,
-    senderName: m.sender_name,
-    text: m.text,
-    timestamp: m.timestamp,
-    isAi: m.is_ai
-  }));
-};
-
-export const sendMessageToSupabase = async (roomName: string, message: ChatMessage) => {
-  const { error } = await supabase.from('messages').insert([{
-    id: message.id,
-    room_id: roomName,
-    sender_id: message.senderId,
-    sender_name: message.senderName,
-    text: message.text,
-    timestamp: message.timestamp,
-    is_ai: message.isAi || false
-  }]);
-  if (error) logDbError('sendMessageToSupabase', error);
-};
-
-export const subscribeToMessages = (roomName: string, onMessage: (msg: ChatMessage) => void) => {
-  return supabase
-    .channel(`messages:${roomName}`)
-    .on(
-      'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${roomName}` },
-      (payload) => onMessage({
-        id: payload.new.id,
-        senderId: payload.new.sender_id,
-        senderName: payload.new.sender_name,
-        text: payload.new.text,
-        timestamp: payload.new.timestamp,
-        isAi: payload.new.is_ai
-      })
-    )
-    .subscribe();
+  return created;
 };
 
 /**
  * PARTICIPANTS
  */
-export const syncParticipant = async (roomName: string, p: Participant) => {
-  // Explicitly construct the record to avoid leaking extra fields that might not exist in the DB
+export const syncParticipant = async (p: Participant) => {
   const record = {
     id: p.id,
-    room_id: roomName,
+    meeting_id: p.meeting_id,
+    user_id: p.user_id,
     name: p.name,
     role: p.role,
     status: p.status,
-    reaction: p.reaction || null,
-    last_seen: Date.now()
+    joined_at: new Date().toISOString()
   };
 
   const { error } = await supabase
@@ -163,13 +77,12 @@ export const syncParticipant = async (roomName: string, p: Participant) => {
   if (error) logDbError('syncParticipant', error);
 };
 
-export const fetchParticipants = async (roomName: string): Promise<Participant[]> => {
-  const cutoff = Date.now() - 30000;
+export const fetchParticipants = async (meetingId: string): Promise<Participant[]> => {
   const { data, error } = await supabase
     .from('participants')
-    .select(PARTICIPANT_COLUMNS)
-    .eq('room_id', roomName)
-    .gt('last_seen', cutoff);
+    .select('*')
+    .eq('meeting_id', meetingId)
+    .is('left_at', null);
 
   if (error) {
     logDbError('fetchParticipants', error);
@@ -178,27 +91,133 @@ export const fetchParticipants = async (roomName: string): Promise<Participant[]
   
   return data.map(p => ({
     id: p.id,
+    user_id: p.user_id,
+    meeting_id: p.meeting_id,
     name: p.name,
     role: p.role,
-    status: p.status || 'approved',
-    isMuted: false, // Defaulted as DB column is missing
-    isVideoOff: false, // Defaulted as DB column is missing
-    isSharingScreen: false, // Defaulted as DB column is missing
+    status: p.status as any,
+    isMuted: false, 
+    isVideoOff: false, 
+    isSharingScreen: false, 
     isSpeaking: false,
-    isHandRaised: false,
-    reaction: p.reaction,
     connection: 'good'
   }));
 };
 
-export const subscribeToParticipants = (roomName: string, onUpdate: () => void) => {
+export const subscribeToParticipants = (meetingId: string, onUpdate: () => void) => {
   return supabase
-    .channel(`participants:${roomName}`)
+    .channel(`participants:${meetingId}`)
     .on('postgres_changes', { 
       event: '*', 
       schema: 'public', 
       table: 'participants', 
-      filter: `room_id=eq.${roomName}` 
+      filter: `meeting_id=eq.${meetingId}` 
     }, () => onUpdate())
+    .subscribe();
+};
+
+/**
+ * MESSAGES
+ */
+export const sendMessageToSupabase = async (meetingId: string, message: ChatMessage) => {
+  const { error } = await supabase.from('messages').insert([{
+    id: message.id,
+    meeting_id: meetingId,
+    sender_id: message.sender_id,
+    content: message.text,
+    created_at: message.timestamp,
+    type: message.isAi ? 'ai' : 'text'
+  }]);
+  if (error) logDbError('sendMessageToSupabase', error);
+};
+
+export const subscribeToMessages = (meetingId: string, onMessage: (msg: ChatMessage) => void) => {
+  return supabase
+    .channel(`messages:${meetingId}`)
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'messages', filter: `meeting_id=eq.${meetingId}` },
+      (payload) => onMessage({
+        id: payload.new.id,
+        meeting_id: payload.new.meeting_id,
+        sender_id: payload.new.sender_id,
+        sender_name: 'User',
+        text: payload.new.content,
+        timestamp: payload.new.created_at,
+        isAi: payload.new.type === 'ai'
+      })
+    )
+    .subscribe();
+};
+
+/**
+ * TRANSCRIPTIONS
+ */
+export const upsertCaption = async (meetingId: string, caption: LiveCaption, userId: string) => {
+  const { error } = await supabase
+    .from('transcriptions')
+    .insert([{
+      user_id: userId,
+      room_name: meetingId,
+      sender: caption.speakerName,
+      text: caption.text,
+      created_at: caption.timestamp
+    }]); 
+  if (error) logDbError('upsertCaption', error);
+};
+
+export const subscribeToCaptions = (meetingId: string, onUpdate: (caption: LiveCaption) => void) => {
+  return supabase
+    .channel(`transcriptions:${meetingId}`)
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'transcriptions', filter: `room_name=eq.${meetingId}` },
+      (payload) => {
+        if (payload.new) {
+          onUpdate({
+            text: payload.new.text,
+            speakerName: payload.new.sender,
+            timestamp: payload.new.created_at
+          });
+        }
+      }
+    )
+    .subscribe();
+};
+
+/** 
+ * COMMAND SYSTEM (Internal Signaling)
+ */
+export const sendRoomCommand = async (command: Omit<RoomCommand, 'id'>) => {
+  // Assuming a 'commands' table exists for real-time signaling as per previous logic
+  const { error } = await supabase
+    .from('commands')
+    .insert([{ 
+      id: crypto.randomUUID(),
+      room_id: command.room_id,
+      targetId: command.targetId,
+      type: command.type,
+      issuerId: command.issuerId
+    }]);
+  if (error) logDbError('sendRoomCommand', error);
+};
+
+export const subscribeToCommands = (meetingId: string, onCommand: (cmd: RoomCommand) => void) => {
+  return supabase
+    .channel(`commands:${meetingId}`)
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'commands', filter: `room_id=eq.${meetingId}` },
+      (payload) => {
+        const c = payload.new;
+        onCommand({
+          id: c.id,
+          room_id: c.room_id,
+          targetId: c.targetId,
+          type: c.type,
+          issuerId: c.issuerId
+        });
+      }
+    )
     .subscribe();
 };

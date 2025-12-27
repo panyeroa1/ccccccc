@@ -20,7 +20,19 @@ const Landing: React.FC<LandingProps> = ({ onStart }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (room) {
-      onStart('', room.replace('orbit.ai/', ''));
+      // Logic to extract room ID even if a full URL is pasted
+      let roomName = room;
+      try {
+        if (room.includes('?room=')) {
+          const url = new URL(room);
+          roomName = url.searchParams.get('room') || room;
+        } else if (room.includes('/')) {
+          roomName = room.split('/').pop() || room;
+        }
+      } catch (e) {
+        // Fallback to raw string
+      }
+      onStart('', roomName);
     }
   };
 

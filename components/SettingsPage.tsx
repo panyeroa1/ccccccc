@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { DeviceSettings, ParticipantRole } from '../types';
+import { DeviceSettings, ParticipantRole, NoiseSuppressionLevel } from '../types';
 
 interface SettingsPageProps {
   isOpen: boolean;
@@ -18,9 +18,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, devices, s
   const [availableDevices, setAvailableDevices] = useState<MediaDeviceInfo[]>([]);
   
   const [videoQuality, setVideoQuality] = useState('720p');
-  const [noiseSuppression, setNoiseSuppression] = useState(true);
-  const [echoCancellation, setEchoCancellation] = useState(true);
-  const [autoGain, setAutoGain] = useState(false);
 
   // Notification Settings
   const [notifJoinSound, setNotifJoinSound] = useState(true);
@@ -60,7 +57,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, devices, s
         <nav className="flex-1 space-y-4">
           <TabButton active={activeTab === 'devices'} onClick={() => setActiveTab('devices')} label="Peripherals" icon={<DeviceIcon />} />
           <TabButton active={activeTab === 'video'} onClick={() => setActiveTab('video')} label="Optics" icon={<VideoIcon />} />
-          <TabButton active={activeTab === 'audio'} onClick={() => setActiveTab('audio')} label="Filters" icon={<AudioIcon />} />
+          <TabButton active={activeTab === 'audio'} onClick={() => setActiveTab('audio')} label="Advanced Audio" icon={<AudioIcon />} />
           <TabButton active={activeTab === 'security'} onClick={() => setActiveTab('security')} label="Privacy" icon={<SecurityIcon />} />
           <TabButton active={activeTab === 'notifications'} onClick={() => setActiveTab('notifications')} label="Alerts" icon={<BellIcon />} />
           <TabButton active={activeTab === 'shortcuts'} onClick={() => setActiveTab('shortcuts')} label="Binding" icon={<ShortcutIcon />} />
@@ -87,6 +84,44 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, devices, s
             </Section>
           )}
 
+          {activeTab === 'audio' && (
+            <Section title="Acoustic Optimization" subtitle="Advanced signal conditioning and filtration.">
+               <div className="space-y-16">
+                  <div className="space-y-6">
+                    <label className="text-[10px] font-normal text-neutral-500 uppercase tracking-[0.4em]">Noise Suppression Preset</label>
+                    <div className="grid grid-cols-4 gap-4">
+                      {(['off', 'low', 'medium', 'high'] as NoiseSuppressionLevel[]).map(level => (
+                        <button
+                          key={level}
+                          onClick={() => setDevices({...devices, noiseSuppression: level})}
+                          className={`py-6 border transition-all text-center uppercase text-[10px] tracking-[0.2em] ${devices.noiseSuppression === level ? 'bg-white text-black border-white' : 'bg-transparent text-neutral-600 border-white/5 hover:border-white/10'}`}
+                        >
+                          {level}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[9px] text-neutral-700 uppercase tracking-widest mt-2">Reduces steady-state ambient sounds and transient spikes.</p>
+                  </div>
+
+                  <div className="space-y-6">
+                    <label className="text-[10px] font-normal text-neutral-500 uppercase tracking-[0.4em]">Signal Controls</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <SecurityToggle label="ECHO_CANCELLATION" active={devices.echoCancellation} onChange={() => setDevices({...devices, echoCancellation: !devices.echoCancellation})} disabled={false} />
+                      <SecurityToggle label="AUTO_GAIN_CONTROL" active={devices.autoGainControl} onChange={() => setDevices({...devices, autoGainControl: !devices.autoGainControl})} disabled={false} />
+                    </div>
+                  </div>
+
+                  <div className="p-8 bg-neutral-950 border border-white/5">
+                    <h4 className="text-[10px] text-white uppercase tracking-[0.4em] mb-4">Acoustic_Model_Status</h4>
+                    <div className="flex items-center gap-4">
+                      <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                      <span className="text-[9px] text-neutral-500 uppercase tracking-widest">Filters_Active_And_Optimized</span>
+                    </div>
+                  </div>
+               </div>
+            </Section>
+          )}
+
           {activeTab === 'video' && (
             <Section title="Optic Res" subtitle="Scale resolution to balance bandwidth against clarity.">
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -94,16 +129,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isOpen, onClose, devices, s
                   <QualityOption label="360p_LOW" active={videoQuality === '360p'} onClick={() => setVideoQuality('360p')} />
                   <QualityOption label="NULL_VIDEO" active={videoQuality === 'audio-only'} onClick={() => setVideoQuality('audio-only')} />
                   <QualityOption label="ADAPTIVE" active={videoQuality === 'auto'} onClick={() => setVideoQuality('auto')} />
-               </div>
-            </Section>
-          )}
-
-          {activeTab === 'audio' && (
-            <Section title="Processing" subtitle="Signal conditioning for optimal audio fidelity.">
-               <div className="space-y-6">
-                  <SecurityToggle label="NOISE_SUPPRESSION" active={noiseSuppression} onChange={() => setNoiseSuppression(!noiseSuppression)} disabled={false} />
-                  <SecurityToggle label="ECHO_CANCELLATION" active={echoCancellation} onChange={() => setEchoCancellation(!echoCancellation)} disabled={false} />
-                  <SecurityToggle label="AUTO_GAIN" active={autoGain} onChange={() => setAutoGain(!autoGain)} disabled={false} />
                </div>
             </Section>
           )}
